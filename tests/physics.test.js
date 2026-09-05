@@ -7,7 +7,8 @@ import { gamma, gammaMinusOne } from '../src/physics/lorentz.js';
 import { computeTimeDilation, TRIP_TYPES } from '../src/physics/timeDilation.js';
 import { createLaunchSimulation } from '../src/physics/launchDynamics.js';
 import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
-import { STANDARD_GRAVITY } from '../src/data/constants.js';
+import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.js';
+import { STANDARD_GRAVITY, EARTH_RADIUS } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
 
@@ -82,6 +83,37 @@ cases.push(['코어 착륙 성공 (1 = landed)', 1, coreBody?.status === 'landed
 cases.push(['코어 접지 속도 ≤ 3 m/s (m/s)', 3, Math.max(coreBody?.impactSpeed ?? 99, 3), 1e-6]);
 cases.push(['코어 착륙 위치 = 무인선 위치 (m)', coreBody?.targetDownrange ?? 1, coreBody?.landedDownrange ?? 0, 1e-3]);
 cases.push(['모든 회수 단 접지 완료 (1 = 정상)', 1, fh.isAllSettled() ? 1 : 0, 1e-9]);
+
+// ---- 보조 화면 대상 고르기 (14단계, D-42): 가장 가까운(고도가 가장 낮은) 착륙 대상 ----
+// 가짜 물체로 규칙만 확인한다. r은 지구 중심 기준 위치이므로 고도 = |r| − R
+const R = EARTH_RADIUS;
+const fake = (id, alt, status, landedAt) => ({
+  id, label: id, r: { x: 0, y: R + alt }, v: { x: 0, y: 0 },
+  recovery: { enabled: true }, status, landedAt,
+});
+const pickHigherLower = selectLandingTarget([
+  fake('high', 40_000, 'falling'),
+  fake('low', 5_000, 'falling'),
+]);
+cases.push(['보조 화면: 낙하 중 두 단 중 고도가 낮은 쪽 (m)', 5000, bodyAltitude(pickHigherLower) , 1e-6]);
+
+const pickWhileOneLanded = selectLandingTarget([
+  fake('landed', 0, 'landed', 600),
+  fake('still', 30_000, 'falling'),
+]);
+cases.push(['보조 화면: 낙하 중인 단이 착륙한 단보다 우선 (1 = 그렇다)', 1, pickWhileOneLanded?.id === 'still' ? 1 : 0, 1e-9]);
+
+const pickAllLanded = selectLandingTarget([
+  fake('first', 0, 'landed', 642),
+  fake('last', 0, 'landed', 721),
+]);
+cases.push(['보조 화면: 모두 착륙하면 마지막에 내려앉은 단 (접지 시각 s)', 721, pickAllLanded?.landedAt ?? 0, 1e-9]);
+
+cases.push(['보조 화면: 회수 단이 없으면 대상 없음 (1 = null)', 1, selectLandingTarget([]) === null ? 1 : 0, 1e-9]);
+
+// 실제 발사 결과에서는 코어가 마지막으로 내려앉으므로 끝까지 코어를 비춘다
+const finalTarget = selectLandingTarget(fh.bodies);
+cases.push(['보조 화면: 발사 종료 시 대상 = 중앙 코어 (1 = 그렇다)', 1, finalTarget?.stageId === 'core' ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');

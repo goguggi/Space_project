@@ -11,6 +11,8 @@ import { createRocketModel } from './rocketModel.js';
 import { createFollowCamera } from './followCamera.js';
 import { createLaunchTimeline } from './launchTimeline.js';
 import { createLaunchHud } from './launchHud.js';
+import { createPipView } from './pipView.js';
+import { selectLandingTarget, landingPhaseLabel } from './landingTarget.js';
 import { createLandingPad, createDroneShip } from './landingSiteModel.js';
 import { EARTH_RADIUS } from '../data/constants.js';
 import { LANDING_SITES } from '../data/landingSites.js';
@@ -39,10 +41,13 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       const events = timeline.skip();
       handleEvents(events);
       placeRocket();
-      hud.update(timeline);
+      refreshViews();
       if (timeline.sim.isComplete()) handlers.onComplete?.(events);
     },
   });
+
+  // 착륙 장면 보조 화면 (14단계). HUD와 같은 요소에 얹어 3D 캔버스 위에 겹친다
+  const pip = createPipView(scene, hudContainer);
 
   // 분리된 단의 3D 그룹: 물체 id → 그룹 (12단계)
   const detachedGroups = new Map();
@@ -90,6 +95,19 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     }
   }
 
+  // 보조 화면과 HUD를 지금 상태에 맞춘다. 비출 대상은 D-42대로 자동으로 고른다
+  function refreshViews() {
+    const body = selectLandingTarget(timeline.sim.bodies);
+    const group = body ? detachedGroups.get(body.id) : null;
+    if (group) {
+      pip.setTarget(group, body.label);
+      pip.setPhase(landingPhaseLabel(body));
+    } else {
+      pip.clear();
+    }
+    hud.update(timeline, group ? body : null);
+  }
+
   function handleEvents(events) {
     for (const e of events) {
       if (e.type === 'separation' && e.body) {
@@ -104,12 +122,15 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     handleEvents(events);
     placeRocket();
     follow.update();
-    hud.update(timeline);
+    refreshViews();
     if (events.some((e) => e.type === 'complete')) handlers.onComplete?.(events);
   });
 
+  // 주 화면을 그린 뒤 같은 렌더러의 일부 영역에 착륙 장면을 덧그린다 (14단계)
+  scene.onAfterRender(() => pip.render());
+
   placeRocket();
-  hud.update(timeline);
+  refreshViews();
   scene.start();
 
   return {
@@ -121,9 +142,10 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       detachedGroups.clear();
       if (droneShip) { scene.scene.remove(droneShip); droneShip = null; }
       rocket.reassemble();
+      pip.clear();
       placeRocket();
       follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));
-      hud.update(timeline);
+      refreshViews();
     },
     get timeline() { return timeline; },
     scene,

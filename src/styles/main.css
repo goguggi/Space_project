@@ -397,6 +397,91 @@ body {
   overflow: hidden;
 }
 
+/* 보조 화면(PiP)과 텔레메트리 바 (14단계, D-48: 팔콘 헤비 중계 화면과 같은 배치) */
+.pip-view {
+  position: absolute;
+  left: 12px;
+  bottom: 96px;
+  width: 30%;
+  min-width: 180px;
+  max-width: 420px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  /* 안쪽은 3D 렌더러가 직접 그린다 (setViewport / setScissor). 배경을 칠하지 않는다 */
+}
+
+.pip-view .pip-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+  border-radius: 6px 6px 0 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.pip-view .pip-name {
+  font-weight: bold;
+}
+
+.pip-view .pip-phase {
+  color: var(--color-accent);
+  font-size: 0.75rem;
+}
+
+.launch-telemetry {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.launch-telemetry .tele-column {
+  flex: 0 1 260px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.launch-telemetry .tele-title {
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.launch-telemetry .tele-phase {
+  color: var(--color-accent);
+  font-weight: normal;
+}
+
+.launch-telemetry .tele-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.launch-telemetry .tele-values b {
+  color: var(--color-text);
+  font-weight: normal;
+}
+
 /* 발사 HUD (11단계) */
 .launch-hud {
   position: absolute;

@@ -19,7 +19,8 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 | `followCamera.js` | 대상 뒤를 따라가는 3인칭 카메라 | 11단계 |
 | `launchTimeline.js` | 발사 → 분리 → 착륙 → 종료의 진행 상태, 배속(1~10배) | 11단계 |
 | `pipView.js` | 착륙 장면용 보조 화면 | 14단계 |
-| `launchHud.js` | 경과 시간, 고도, 속도, 단계, 배속 조절, 건너뛰기 | 14단계 |
+| `launchHud.js` | 경과 시간, 고도, 속도, 단계, 배속 조절, 건너뛰기 | 11단계, 14단계 |
+| `landingTarget.js` | 보조 화면이 비출 착륙 대상 고르기 | 14단계 |
 
 ## 축척 (D-39)
 
@@ -33,12 +34,14 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 
 | 파일 | 내보내는 것 | 설명 |
 |---|---|---|
-| `launchScene.js` | `createLaunchScene(container)`, `SCENE_METERS_PER_UNIT`, `EARTH_DISPLAY_RADIUS` | 렌더러(로그 깊이), 장면, 카메라, 지구(구)와 옅은 대기, 발사대(받침과 탑), 태양광·반구광, 별 배경, OrbitControls. 반환값: `start()`, `stop()`, `onFrame(fn)`(매 프레임 dt초), `scene`, `camera`, `controls`, `surfaceY`. 탭이 숨겨지면 setTimeout으로 시뮬레이션만 계속 돌린다 (10단계) |
+| `launchScene.js` | `createLaunchScene(container)`, `SCENE_METERS_PER_UNIT`, `EARTH_DISPLAY_RADIUS` | 렌더러(로그 깊이), 장면, 카메라, 지구(구)와 옅은 대기, 발사대(받침과 탑), 태양광·반구광, 별 배경, OrbitControls. 반환값: `start()`, `stop()`, `onFrame(fn)`(매 프레임 dt초), `onAfterRender(fn)`(주 화면을 그린 직후, 14단계), `scene`, `camera`, `controls`, `surfaceY`. 탭이 숨겨지면 setTimeout으로 시뮬레이션만 계속 돌린다 (10단계) |
 | `rocketModel.js` | `createRocketModel(spec)` | 제원의 `geometry.parts[]`로 단별 그룹(`stageGroups`)과 화염(`flames`)을 만든다. `update(sim)`이 연소 중인 단의 화염만 보이게 하고 흔들림을 준다 (11단계). `detachStage(id, scene)`은 단을 세계 좌표 그대로 장면의 독립 그룹으로 떼어내고, `reassemble()`은 다시 붙인다 (12단계) |
 | `followCamera.js` | `createFollowCamera(camera, controls)` | 대상이 움직인 만큼 카메라를 같이 옮기고 OrbitControls 중심을 대상에 둔다. 사용자가 돌린 시점 각도가 유지된다. `setTarget(obj, offset)`, `update()` (11단계) |
 | `launchTimeline.js` | `createLaunchTimeline(spec)`, `TIME_SCALES` | 시뮬레이션 시계와 배속(1·2·5·10배), 사건 기록, 단계 이름. `start()`, `pause()`, `reset()`, `skip()`(남은 과정 즉시 계산), `update(dtReal)` (11단계) |
-| `launchHud.js` | `createLaunchHud(container, {onTimeScale, onSkip})` | T+ 시계, 단계 이름, 고도·속도·질량, 배속 버튼, 건너뛰기. `update(timeline)` (11단계 기본형, 14단계 확장) |
+| `launchHud.js` | `createLaunchHud(container, {onTimeScale, onSkip})` | 위쪽: T+ 시계, 단계 이름, 고도·속도·질량, 배속 버튼, 건너뛰기 (11단계). 아래쪽: 팔콘 헤비 중계 화면 같은 두 칸 텔레메트리 바 — 왼쪽은 붙어 있는 단(로켓 → 2단·우주선), 오른쪽은 착륙 대상의 이름·착륙 단계·속도·고도·목표 (14단계, D-52). `update(timeline, landingBody)` |
 | `landingSiteModel.js` | `createLandingPad(downrangeM)`, `createDroneShip(downrangeM)`, `groundPointToScene(downrangeM)` | 착륙장 패드(콘크리트 원반 + 노란 링)와 무인선(바다 원반 + 갑판). 진행 방향 거리 s를 각도 s/R로 바꿔 구 표면에 놓는다 (13단계) |
-| `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계). 분리 사건이 오면 단을 떼어내 `detachedGroups`에 넣고 매 프레임 각 물체의 위치에 놓는다 (12단계). 회수 단은 국소 수직 자세로 세우고 착륙 연소 중 화염을 켠다. 착륙장은 처음부터, 무인선은 유도가 위치를 확정하는 순간 만든다 (13단계) |
+| `landingTarget.js` | `selectLandingTarget(bodies)`, `bodyAltitude`, `bodySpeed`, `landingPhaseLabel` | 회수 단 가운데 아직 내려오는 중이면서 고도가 가장 낮은 것을 고른다. 모두 내려앉으면 마지막으로 접지한 단을 계속 비춘다 (D-42). Three.js도 DOM도 쓰지 않는 순수 계산이라 `tests/physics.test.js`에서 그대로 검증한다 (14단계) |
+| `pipView.js` | `createPipView(sceneApi, overlayHost)` | 같은 장면을 두 번째 카메라로 렌더러의 일부 영역에 덧그린다(`setViewport` + `setScissor`). 그릴 사각형은 CSS로 배치한 `.pip-view` 요소의 실제 위치를 재서 정한다. 카메라는 대상의 국소 수직을 위쪽으로 삼아 발사 평면 바깥(+z)에서 옆으로 본다. `setTarget(group, label)`, `setPhase(text)`, `render()`, `clear()` (14단계) |
+| `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계). 분리 사건이 오면 단을 떼어내 `detachedGroups`에 넣고 매 프레임 각 물체의 위치에 놓는다 (12단계). 회수 단은 국소 수직 자세로 세우고 착륙 연소 중 화염을 켠다. 착륙장은 처음부터, 무인선은 유도가 위치를 확정하는 순간 만든다 (13단계). 매 프레임 `refreshViews()`가 착륙 대상을 다시 골라 보조 화면과 HUD에 넘기고, 주 화면을 그린 뒤 `pip.render()`를 부른다 (14단계) |
 
 - `main.js`는 `launchController.js`를 동적 `import()`로 불러온다. 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 하기 위함이다.

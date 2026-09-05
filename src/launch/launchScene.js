@@ -25,6 +25,7 @@ export const EARTH_DISPLAY_RADIUS = EARTH_RADIUS / SCENE_METERS_PER_UNIT;
  *   controls: OrbitControls, earth: THREE.Mesh, launchPad: THREE.Group,
  *   surfaceY: number,   지표면의 화면 y 좌표 (발사대 바닥)
  *   start: () => void, stop: () => void, onFrame: (fn: (dtSeconds: number) => void) => void,
+ *   onAfterRender: (fn: () => void) => void,   주 화면을 그린 직후에 부를 함수 (보조 화면용, 14단계)
  * }}
  */
 export function createLaunchScene(container) {
@@ -123,6 +124,8 @@ export function createLaunchScene(container) {
 
   // ---- 프레임 루프 ----
   const frameCallbacks = [];
+  // 주 화면을 그린 뒤에 부를 함수들. 보조 화면(pipView)이 같은 렌더러의 일부 영역에 덧그린다 (14단계)
+  const afterRenderCallbacks = [];
   let running = false;
   let lastTime = 0;
 
@@ -143,7 +146,10 @@ export function createLaunchScene(container) {
     lastTime = now;
     for (const fn of frameCallbacks) fn(dt);
     controls.update();
-    if (!document.hidden) renderer.render(scene, camera);
+    if (!document.hidden) {
+      renderer.render(scene, camera);
+      for (const fn of afterRenderCallbacks) fn();
+    }
     scheduleNext();
   }
 
@@ -158,5 +164,6 @@ export function createLaunchScene(container) {
     },
     stop() { running = false; },
     onFrame(fn) { frameCallbacks.push(fn); },
+    onAfterRender(fn) { afterRenderCallbacks.push(fn); },
   };
 }

@@ -87,7 +87,8 @@ export function createLaunchSimulation(spec, options = {}) {
   const pendingEvents = [];
 
   // 분리된 단(12단계): 각자 중력만 받으며 움직이는 독립 물체. 13단계에서 착륙 유도가 붙는다.
-  // { id, stageId, label, r, v, mass, propellant, recovery, status: 'falling' | 'landed' | 'impact' }
+  // { id, stageId, label, r, v, mass, propellant, recovery, status: 'falling' | 'landed' | 'impact',
+  //   landedAt: 접지 시각(s), landedDownrange, impactSpeed, guidance: { phase } }
   const bodies = [];
 
   function integrateBody(body, h) {
@@ -133,6 +134,7 @@ export function createLaunchSimulation(spec, options = {}) {
       body.v.y = 0;
       body.thrust = 0;
       body.status = landed ? 'landed' : 'impact';
+      body.landedAt = time;   // 접지 시각 (s). 보조 화면이 마지막으로 내려앉은 단을 고를 때 쓴다 (14단계)
       body.landedDownrange = EARTH_RADIUS * Math.atan2(body.r.x, body.r.y);
       pendingEvents.push({ type: body.status, stageId: body.stageId, label: body.label, time, speed });
     }
