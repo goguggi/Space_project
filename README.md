@@ -21,6 +21,7 @@
 5. [기초 데이터와 출처](docs/05_data_reference.md)
 6. [의사결정 기록과 미결 질문](docs/06_decisions.md)
 7. [기능 계획 누적 기록](docs/07_feature_plans.md)
+8. [로켓 설계 프로그램 인수 문서](docs/08_rocket_design_handoff.md) (설계 담당 팀원은 이 문서부터)
 
 ## 현재 상태
 

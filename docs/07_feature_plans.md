@@ -109,3 +109,57 @@
 - [05_data_reference.md](05_data_reference.md) 6절 팔콘 헤비 제원, 7절 착륙장 추가
 - [06_decisions.md](06_decisions.md) D-17 수정, D-19~D-25 추가, Q-11~Q-16 추가
 - 새 폴더 README: [../src/launch/README.md](../src/launch/README.md), [../lib/README.md](../lib/README.md)
+
+---
+
+## 기능 2. 로켓 설계 프로그램 연동 (2026-09-05)
+
+### 요청 내용
+
+- 다른 팀원이 **로켓 설계 프로그램**을 만든다. 그 팀원이 알아야 할 사항과 계획을 정리한다.
+
+### 확정된 결정
+
+| 번호 | 항목 | 결정 |
+|---|---|---|
+| D-48 | 관계 | 설계 결과를 이 프로젝트의 발사 시뮬레이션이 읽어서 사용 |
+| D-49 | 저장 위치 | 별도 저장소 |
+| D-50 | 설계 범위 | 3D 부품 조립 (KSP처럼 드래그로 붙이기) |
+| D-51 | 기술 | 이 프로젝트와 동일 (HTML/JS ES 모듈, Three.js, 한국어) |
+
+### 만드는 것
+
+- 설계 담당자용 인수 문서: [08_rocket_design_handoff.md](08_rocket_design_handoff.md)
+  (전체 그림, 기능 요구사항, 계산 공식, 검증 규칙, JSON 형식, 코드 규칙, 권장 개발 단계, 미결 질문)
+- 두 프로그램의 계약인 로켓 제원 JSON 예제: [examples/falcon_heavy.rocket.json](examples/falcon_heavy.rocket.json)
+- 이 프로젝트 쪽 작업 (16단계):
+
+| 폴더 | 파일 | 내용 |
+|---|---|---|
+| `src/data/` | `rocketSpecSchema.js` | JSON 형식의 필수 필드와 검증 규칙 정의 |
+| `src/physics/` | `rocketSpecValidator.js` | 5절 검증 규칙(V-01~V-07) 구현 |
+| `src/ui/` | `rocketFileLoader.js` | "설계한 로켓 불러오기" 버튼, 파일 선택, 오류 안내 |
+| `src/launch/` | `rocketModel.js` 확장 | `geometry.parts`로 로켓 형상 생성 |
+| `src/physics/` | `staging.js` 일반화 | 팔콘 헤비 고정 구조가 아니라 `stages[]`의 임의 구성(병렬/직렬, 회수 여부)을 처리 |
+
+### 다른 단계에 미치는 영향
+
+- 11~13단계(발사 물리, 단 분리, 재착륙)는 처음부터 `stages[]` 형식을 입력으로 받도록 만든다.
+  팔콘 헤비 기본값은 `src/data/falconHeavy.js`가 같은 형식으로 제공한다. 그래야 16단계에서 설계 로켓으로 바꿔 끼우기만 하면 된다.
+
+### 단계 분할과 완료 조건
+
+| 단계 | 이름 | 완료 조건 |
+|---|---|---|
+| 16 | 설계한 로켓 불러오기 | 예제 JSON을 불러오면 검증을 통과하고, 그 로켓으로 발사 장면이 재생된다. 잘못된 파일은 한국어 오류 안내가 나온다 |
+
+### 미결 질문
+
+[06_decisions.md](06_decisions.md)의 Q-19 ~ Q-23. 설계 담당자와 함께 정한다.
+
+### 다른 문서에 반영한 곳
+
+- [01_requirements.md](01_requirements.md) 2.11절
+- [04_roadmap.md](04_roadmap.md) 16단계 추가, 11단계 입력 형식 주석
+- [06_decisions.md](06_decisions.md) D-48~D-51, Q-19~Q-23
+- [INDEX.md](INDEX.md), [../src/data/README.md](../src/data/README.md), [../src/physics/README.md](../src/physics/README.md), [../src/ui/README.md](../src/ui/README.md)

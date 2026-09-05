@@ -1,0 +1,64 @@
+{
+  "formatVersion": 1,
+  "name": "팔콘 헤비 (기준 예제)",
+  "createdAt": "2026-09-05T00:00:00Z",
+  "designer": "team_project",
+  "payloadMassKg": 10000,
+  "stages": [
+    {
+      "id": "booster-left",
+      "label": "측면 부스터 (좌)",
+      "role": "parallel",
+      "separationOrder": 1,
+      "dryMassKg": 22200,
+      "propellantMassKg": 411000,
+      "engines": { "count": 9, "thrustSeaLevelN": 845000, "thrustVacuumN": 914000, "ispSeaLevelS": 282, "ispVacuumS": 311 },
+      "recovery": { "enabled": true, "target": "launch_site", "reservePropellantFraction": 0.05 }
+    },
+    {
+      "id": "booster-right",
+      "label": "측면 부스터 (우)",
+      "role": "parallel",
+      "separationOrder": 1,
+      "dryMassKg": 22200,
+      "propellantMassKg": 411000,
+      "engines": { "count": 9, "thrustSeaLevelN": 845000, "thrustVacuumN": 914000, "ispSeaLevelS": 282, "ispVacuumS": 311 },
+      "recovery": { "enabled": true, "target": "launch_site", "reservePropellantFraction": 0.05 }
+    },
+    {
+      "id": "core",
+      "label": "중앙 코어",
+      "role": "serial",
+      "separationOrder": 2,
+      "dryMassKg": 22200,
+      "propellantMassKg": 411000,
+      "engines": { "count": 9, "thrustSeaLevelN": 845000, "thrustVacuumN": 914000, "ispSeaLevelS": 282, "ispVacuumS": 311 },
+      "throttleWhileBoosters": 0.6,
+      "recovery": { "enabled": true, "target": "drone_ship", "reservePropellantFraction": 0.05 }
+    },
+    {
+      "id": "upper",
+      "label": "2단",
+      "role": "serial",
+      "separationOrder": 3,
+      "dryMassKg": 4000,
+      "propellantMassKg": 111000,
+      "engines": { "count": 1, "thrustSeaLevelN": 0, "thrustVacuumN": 981000, "ispSeaLevelS": 0, "ispVacuumS": 348 },
+      "recovery": { "enabled": false }
+    }
+  ],
+  "geometry": {
+    "parts": [
+      { "partId": "booster-left-body",  "type": "tank",    "stageId": "booster-left",  "position": [-3.7, 21, 0], "rotation": [0, 0, 0], "size": [3.7, 42, 3.7] },
+      { "partId": "booster-right-body", "type": "tank",    "stageId": "booster-right", "position": [3.7, 21, 0],  "rotation": [0, 0, 0], "size": [3.7, 42, 3.7] },
+      { "partId": "core-body",          "type": "tank",    "stageId": "core",          "position": [0, 21, 0],    "rotation": [0, 0, 0], "size": [3.7, 42, 3.7] },
+      { "partId": "upper-body",         "type": "tank",    "stageId": "upper",         "position": [0, 49, 0],    "rotation": [0, 0, 0], "size": [3.7, 14, 3.7] },
+      { "partId": "fairing",            "type": "fairing", "stageId": "upper",         "position": [0, 63, 0],    "rotation": [0, 0, 0], "size": [5.2, 13, 5.2] }
+    ]
+  },
+  "summary": {
+    "note": "summary 값은 설계 프로그램이 4절 공식으로 계산해 채운다. 이 예제의 값은 참고용 개략값이다.",
+    "totalMassKg": 1425000,
+    "liftoffTwr": 1.6
+  }
+}

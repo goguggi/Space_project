@@ -23,8 +23,9 @@
 | 11 | 13 | 재착륙 (부스터: 착륙장, 코어: 무인선) | 예정 (기능 1) |
 | 12 | 14 | 화면 분할 카메라와 HUD | 예정 (기능 1) |
 | 13 | 15 | 발사 장면과 결과 화면 연결 | 예정 (기능 1) |
-| 14 | 8 | 가속-감속 모델 추가 (1g 고정) | 예정 |
-| 15 | 9 | 검증, 정리, 마무리, GitHub Pages 게시 확인 | 예정 |
+| 14 | 16 | 설계한 로켓 불러오기 (JSON) | 예정 (기능 2) |
+| 15 | 8 | 가속-감속 모델 추가 (1g 고정) | 예정 |
+| 16 | 9 | 검증, 정리, 마무리, GitHub Pages 게시 확인 | 예정 |
 
 10~15단계는 [07_feature_plans.md](07_feature_plans.md) 기능 1의 계획이다.
 각 단계의 "시작 전 확인할 것"은 2026-09-05에 모두 답변되어 [06_decisions.md](06_decisions.md) 3절에 결정으로 기록되었다.
@@ -158,8 +159,8 @@
 ## 11단계: 로켓 모델과 발사 물리 (단 분리 없음)
 
 **만드는 것**
-- `src/data/falconHeavy.js`: 각 단의 질량, 추력, 비추력, 연소 시간
-- `src/physics/launchDynamics.js`: [03_physics.md](03_physics.md) 6.2절과 6.6절
+- `src/data/falconHeavy.js`: 각 단의 질량, 추력, 비추력, 연소 시간. **형식은 [08_rocket_design_handoff.md](08_rocket_design_handoff.md) 6절의 `stages[]`와 동일**하게 만든다 (16단계에서 설계 로켓으로 교체하기 위함)
+- `src/physics/launchDynamics.js`: [03_physics.md](03_physics.md) 6.2절과 6.6절. 입력은 `stages[]` 형식
 - `src/launch/rocketModel.js`: 로켓 형상(원통 + 원뿔)과 화염
 - `src/launch/followCamera.js`: 로켓 뒤를 따라가는 3인칭 카메라
 - `src/launch/launchTimeline.js`: 발사 시작, 경과 시간, 배속(1~10배)
@@ -216,3 +217,20 @@
 
 **완료 조건**
 - 발사 → 분리 → 착륙 → 출발 → 스톱워치 → 결과의 흐름이 끊김 없이 이어진다.
+
+## 16단계: 설계한 로켓 불러오기 (기능 2)
+
+**만드는 것**
+- `src/data/rocketSpecSchema.js`: JSON 형식의 필수 필드 정의
+- `src/physics/rocketSpecValidator.js`: [08_rocket_design_handoff.md](08_rocket_design_handoff.md) 5절 검증 규칙 V-01~V-07
+- `src/ui/rocketFileLoader.js`: "설계한 로켓 불러오기" 버튼, 파일 선택, 한국어 오류 안내
+- `src/launch/rocketModel.js` 확장: `geometry.parts`로 로켓 형상 생성
+- `src/physics/staging.js` 일반화: 임의의 병렬/직렬 단 구성과 회수 설정 처리
+
+**완료 조건**
+- [examples/falcon_heavy.rocket.json](examples/falcon_heavy.rocket.json)을 불러오면 기본 팔콘 헤비와 같은 발사 장면이 재생된다.
+- 설계 프로그램이 내보낸 다른 구성의 로켓도 재생된다.
+- 잘못된 파일(필드 누락, TWR < 1 등)은 발사 버튼이 비활성화되고 이유가 표시된다.
+
+**적용할 결정**
+- JSON 파일 방식 (D-48). 예비 추진제 비율 기본 5% (Q-20 확정 후)

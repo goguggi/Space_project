@@ -27,6 +27,7 @@
 | `survivalIcons.js` | 생물별 도착 시점 생존/사망 아이콘 | 7단계 |
 | `motionModelSelector.js` | 등속 / 가속-감속(1g 고정) 모델 선택 | 8단계 |
 | `launchButton.js` | "발사" 버튼, 발사 장면 시작과 결과 화면 전환 | 11단계, 15단계 |
+| `rocketFileLoader.js` | "설계한 로켓 불러오기" 버튼, 파일 선택, 오류 안내 | 16단계 |
 
 ## 현재 파일 목록
 
