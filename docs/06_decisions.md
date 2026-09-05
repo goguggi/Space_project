@@ -68,7 +68,7 @@
 | D-43 | 탑재체 질량 (Q-17) | 10 t | |
 | D-44 | 케네디 외 발사장 착륙장 (Q-18) | 발사대 기준 같은 상대 위치에 가상 착륙장 | 화면에 "가상 착륙장" 표기 |
 | D-45 | Three.js 버전 (Q-12) | r170 (0.170.0), ES 모듈 빌드 | 10단계에서 도입. [../lib/README.md](../lib/README.md) |
-| D-46 | GitHub Pages 설정 | main 브랜치 루트에서 게시 | `index.html`이 저장소 최상위에 있음. 구현: 저장소 설정 화면 없이도 켜지도록 `.github/workflows/pages.yml`(GitHub Actions)이 main 푸시마다 최상위를 게시하고 Pages를 자동 활성화. 게시 주소 https://goguggi.github.io/Space_project/ |
+| D-46 | GitHub Pages 설정 | main 브랜치 루트에서 게시 | 2026-09-05 저장소 설정에서 켬 (Deploy from a branch: main, /root). `.nojekyll`로 Jekyll 처리 생략. 게시 주소 https://goguggi.github.io/Space_project/ |
 | D-47 | 원격 저장소 | https://github.com/goguggi/Space_project.git | 푸시는 사용자 지시 시에만 |
 | D-48 | 로켓 설계 프로그램과의 관계 | 설계 결과(JSON)를 이 프로젝트의 발사 시뮬레이션이 읽어서 사용 | 기능 2 |
 | D-49 | 설계 프로그램 저장 위치 | 별도 저장소 | 주소는 Q-23 |
