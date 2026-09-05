@@ -10,5 +10,6 @@ Thumbs.db
 *.log
 *.tmp
 
-# Claude Code 로컬 설정
-.claude/
+# Claude Code 로컬 설정. 미리보기 서버 설정(launch.json)만 저장소에 포함한다
+.claude/*
+!.claude/launch.json

@@ -59,44 +59,39 @@
 
 **13단계 완료 조건** ([04_roadmap.md](04_roadmap.md)): 부스터 2기는 착륙장에, 코어는 무인선에 속도 거의 0으로 내려앉는다.
 
-## 4. 다른 컴퓨터에서 시작하는 방법
+## 4. 다른 컴퓨터에서 Claude Code가 이어서 하는 절차
 
-1. 저장소 받기
+사용자는 저장소를 받은 뒤 Claude Code에 "이어서 해"라고만 말한다. Claude Code는 아래를 스스로 한다.
+(작업 규칙 전체는 저장소 최상위의 `CLAUDE.md`에 있다. Claude Code가 자동으로 읽는다.)
 
-```bash
-git clone https://github.com/goguggi/Space_project.git
-```
+1. 이 문서와 [04_roadmap.md](04_roadmap.md)의 다음 단계, [06_decisions.md](06_decisions.md)의 결정·미결 질문을 읽는다.
+2. 환경 확인: `git config user.name`이 비어 있으면 커밋 명령에 `-c user.name="genai06" -c user.email="genai06@cdsai.kr"`를 붙인다. PowerShell·Python·Node 중 무엇이 있는지 확인한다.
+3. 로컬 서버를 띄운다. `.claude/launch.json`의 `local-server`(PowerShell 스크립트 `tools/serve.ps1`)를 쓰고, PowerShell이 없으면 `python -m http.server 8000`으로 바꿔 `launch.json`을 고친다.
+4. http://localhost:8000/tests/physics.test.html 에서 "19 / 19 통과"를 확인한다. (13단계 코드가 검증 결과를 바꾸면 안 된다)
+5. 3절의 "남은 문제"부터 13단계를 이어서 구현한다. 완료 조건을 만족하면 커밋·푸시하고 이 문서를 갱신한다.
+6. 푸시 시 GitHub 로그인 창이 뜨면 사용자에게 로그인만 요청한다.
 
-2. 커밋 작성자 설정 (처음 한 번)
+## 5. 이어서 할 때 읽는 순서 (Claude Code용)
 
-```bash
-git config user.name "이름"
-```
-
-```bash
-git config user.email "이메일"
-```
-
-3. 로컬 서버로 열기 (더블클릭으로 열면 ES 모듈이 막힌다). 저장소 최상위에서:
-
-```bash
-powershell -ExecutionPolicy Bypass -File tools/serve.ps1
-```
-
-Python이 있는 환경이면 대신 `python -m http.server 8000` 도 된다. 브라우저에서 http://localhost:8000 을 연다.
-
-4. 검증 페이지: http://localhost:8000/tests/physics.test.html 에서 "19 / 19 통과"를 확인한다.
-
-5. 푸시할 때 GitHub 로그인 창이 뜨면 로그인한다 (Git Credential Manager). 토큰을 파일에 적지 않는다.
-
-## 5. 이어서 할 때 읽는 순서
-
-1. 이 문서 (현재 상황)
+1. `CLAUDE.md` (규칙) → 이 문서 (현재 상황)
 2. [04_roadmap.md](04_roadmap.md) 13단계 항목과 [03_physics.md](03_physics.md) 6.5절 (착륙 유도 공식)
-3. `src/physics/landingGuidance.js`, `src/physics/launchDynamics.js`의 `integrateBody`
-4. 결정이 필요한 일이 생기면 [06_decisions.md](06_decisions.md) 4절에 질문을 추가하고 팀에 묻는다
+3. `src/physics/landingGuidance.js`, `src/physics/launchDynamics.js`의 `integrateBody`, `src/launch/launchController.js`의 `placeBodies`·`handleEvents`
+4. 결정이 필요한 일이 생기면 [06_decisions.md](06_decisions.md) 4절에 Q-번호로 적고 사용자에게 묻는다
 
-AI 도우미에게 이어서 시키려면: "docs/09_current_status.md를 읽고 13단계 재착륙 유도부터 이어서 진행해 줘. 규칙은 docs/02_architecture.md와 06_decisions.md를 따르고, 결정이 필요한 건 물어봐."
+## 5.1 이번 세션에서 검증에 쓴 방법 (같은 방식으로 이어서 검증)
+
+브라우저 미리보기 탭에서 자바스크립트를 실행해 상태를 읽는다. 예:
+
+```javascript
+// 발사 후 건너뛰기까지 실행하고 분리된 단들의 결과를 본다
+document.getElementById('launch-button').click();
+document.getElementById('hud-skip').click();
+const s = window.__state.launch.timeline.sim;
+s.bodies.map(b => `${b.stageId}: ${b.status} 접지속도=${(b.impactSpeed||0).toFixed(1)} 목표=${b.targetDownrange} 실제=${6371000*Math.atan2(b.r.x,b.r.y)}`);
+window.__state.launch.timeline.getEvents().map(e => e.type + ':' + (e.label||'') + '@' + Math.round(e.time));
+```
+
+13단계 완료 기준: 부스터 2기 `status === 'landed'`, 접지 속도 3 m/s 이하, 실제 위치가 목표(2,000 m)에서 수백 m 이내. 코어는 무인선 위치(탄도 예측 지점)에 같은 조건.
 
 ## 6. 알아 둘 것
 

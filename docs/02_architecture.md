@@ -4,6 +4,7 @@
 
 ```
 team_project/
+├── CLAUDE.md                # Claude Code 작업 규칙 (자동으로 읽힘)
 ├── README.md                # 프로젝트 소개, 문서 안내
 ├── .gitignore
 ├── index.html               # 프로그램 진입점 (1단계에서 생성)
@@ -36,6 +37,7 @@ team_project/
 ├── tools/                   # 개발 보조 스크립트 (로컬 서버)
 │   └── README.md
 ├── .nojekyll                # GitHub Pages의 Jekyll 처리 생략
+├── .claude/launch.json      # Claude Code 미리보기 서버 설정 (tools/serve.ps1 실행)
 ├── .github/                 # GitHub 설정 설명
 │   └── README.md
 └── tests/                   # 계산 검증용 테스트

@@ -11,7 +11,7 @@
 
 ## 문서 안내
 
-**이어서 개발하려면 [docs/09_current_status.md](docs/09_current_status.md)부터 읽습니다.** (현재 상황, 다른 컴퓨터에서 시작하는 방법)
+**이어서 개발하려면**: Claude Code로 이 저장소를 열고 "이어서 해"라고 하면 됩니다. Claude Code는 [CLAUDE.md](CLAUDE.md)(작업 규칙)와 [docs/09_current_status.md](docs/09_current_status.md)(현재 상황)를 읽고 다음 단계를 진행합니다.
 
 모든 문서의 목차는 [docs/INDEX.md](docs/INDEX.md)에 있습니다.
 개발을 시작하기 전에 반드시 아래 순서로 읽습니다.
