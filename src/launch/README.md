@@ -38,6 +38,7 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 | `followCamera.js` | `createFollowCamera(camera, controls)` | 대상이 움직인 만큼 카메라를 같이 옮기고 OrbitControls 중심을 대상에 둔다. 사용자가 돌린 시점 각도가 유지된다. `setTarget(obj, offset)`, `update()` (11단계) |
 | `launchTimeline.js` | `createLaunchTimeline(spec)`, `TIME_SCALES` | 시뮬레이션 시계와 배속(1·2·5·10배), 사건 기록, 단계 이름. `start()`, `pause()`, `reset()`, `skip()`(남은 과정 즉시 계산), `update(dtReal)` (11단계) |
 | `launchHud.js` | `createLaunchHud(container, {onTimeScale, onSkip})` | T+ 시계, 단계 이름, 고도·속도·질량, 배속 버튼, 건너뛰기. `update(timeline)` (11단계 기본형, 14단계 확장) |
+| `landingSiteModel.js` | `createLandingPad(downrangeM)`, `createDroneShip(downrangeM)`, `groundPointToScene(downrangeM)` | 착륙장 패드(콘크리트 원반 + 노란 링)와 무인선(바다 원반 + 갑판). 진행 방향 거리 s를 각도 s/R로 바꿔 구 표면에 놓는다 (13단계) |
 | `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계). 분리 사건이 오면 단을 떼어내 `detachedGroups`에 넣고 매 프레임 각 물체의 위치(속도 방향으로 회전)에 놓는다 (12단계) |
 
 - `main.js`는 `launchController.js`를 동적 `import()`로 불러온다. 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 하기 위함이다.

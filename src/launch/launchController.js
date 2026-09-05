@@ -11,7 +11,9 @@ import { createRocketModel } from './rocketModel.js';
 import { createFollowCamera } from './followCamera.js';
 import { createLaunchTimeline } from './launchTimeline.js';
 import { createLaunchHud } from './launchHud.js';
+import { createLandingPad, createDroneShip } from './landingSiteModel.js';
 import { EARTH_RADIUS } from '../data/constants.js';
+import { LANDING_SITES } from '../data/landingSites.js';
 
 const S = SCENE_METERS_PER_UNIT;
 
@@ -45,6 +47,11 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
   // 분리된 단의 3D 그룹: 물체 id → 그룹 (12단계)
   const detachedGroups = new Map();
 
+  // 착륙장(고정)과 무인선(코어 분리 시 위치 확정) 3D 모델 (13단계)
+  const landingPad = createLandingPad(LANDING_SITES.launch_site.downrangeM, LANDING_SITES.launch_site.label);
+  scene.scene.add(landingPad);
+  let droneShip = null;
+
   function toScene(r) {
     return [r.x / S, (r.y - EARTH_RADIUS) / S, 0];
   }
@@ -59,15 +66,21 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     placeBodies();
   }
 
-  // 분리된 단들을 각자의 물리 위치에 놓는다. 방향은 속도 방향(떨어지는 자세)
+  // 분리된 단들을 각자의 물리 위치에 놓는다.
+  // 자세: 회수 단은 엔진을 아래로 향한 채(국소 수직) 내려오고, 버려진 단은 속도 방향을 따른다
   function placeBodies() {
     for (const body of timeline.sim.bodies) {
       const group = detachedGroups.get(body.id);
       if (!group) continue;
       group.position.set(...toScene(body.r));
-      const speed = Math.hypot(body.v.x, body.v.y);
-      if (speed > 1) {
-        group.rotation.z = -Math.atan2(body.v.x, body.v.y);
+      const flame = rocket.flames.get(body.stageId);
+      if (body.recovery?.enabled) {
+        group.rotation.z = -Math.atan2(body.r.x, body.r.y);   // 국소 수직 = 지구 중심 반대 방향
+        if (flame) flame.visible = body.thrust > 0;
+      } else {
+        const speed = Math.hypot(body.v.x, body.v.y);
+        if (speed > 1) group.rotation.z = -Math.atan2(body.v.x, body.v.y);
+        if (flame) flame.visible = false;
       }
     }
   }
@@ -77,6 +90,11 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       if (e.type === 'separation' && e.body) {
         const group = rocket.detachStage(e.stageId, scene.scene);
         if (group) detachedGroups.set(e.body.id, group);
+        // 무인선 착륙 대상이면 그 위치에 무인선을 놓는다
+        if (e.body.recovery?.target === 'drone_ship' && e.body.targetDownrange != null && !droneShip) {
+          droneShip = createDroneShip(e.body.targetDownrange, LANDING_SITES.drone_ship.label);
+          scene.scene.add(droneShip);
+        }
       }
     }
   }
@@ -101,6 +119,7 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       // 분리된 단 그룹을 로켓에 다시 붙인다 (원래 국소 좌표로)
       for (const [, group] of detachedGroups) scene.scene.remove(group);
       detachedGroups.clear();
+      if (droneShip) { scene.scene.remove(droneShip); droneShip = null; }
       rocket.reassemble();
       placeRocket();
       follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));

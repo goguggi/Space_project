@@ -92,8 +92,8 @@ export function createRocketModel(spec) {
     for (const s of sim.stages) {
       const flame = flames.get(s.id);
       if (!flame) continue;
-      flame.visible = s.burning;
-      if (s.burning) {
+      if (s.attached) flame.visible = s.burning;   // 분리된 단의 화염은 launchController가 착륙 연소에 맞춰 켠다
+      if (flame.visible) {
         const k = 0.9 + 0.15 * Math.sin(flicker + s.id.length);
         flame.scale.set(1, k, 1);
       }

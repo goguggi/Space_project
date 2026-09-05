@@ -7,6 +7,8 @@
 // 단위: m, m/s, kg, N, s
 
 import { EARTH_GM, EARTH_RADIUS, STANDARD_GRAVITY } from '../data/constants.js';
+import { LANDING_SITES } from '../data/landingSites.js';
+import { guideBody, predictedDownrange } from './landingGuidance.js';
 
 // 대기압에 따른 추력 변화: T(h) = T_진공 − (T_진공 − T_해수면) · exp(−h / H). H는 대기 척도 높이 약 8,400 m
 const ATMOSPHERE_SCALE_HEIGHT = 8_400;
@@ -92,12 +94,36 @@ export function createLaunchSimulation(spec, options = {}) {
     if (body.status !== 'falling' && body.status !== 'discarded') return;
     const rNorm = Math.hypot(body.r.x, body.r.y);
     const g = gravityOn ? EARTH_GM / (rNorm * rNorm) : 0;
-    body.v.x -= g * (body.r.x / rNorm) * h;
-    body.v.y -= g * (body.r.y / rNorm) * h;
+    let ax = -g * (body.r.x / rNorm);
+    let ay = -g * (body.r.y / rNorm);
+
+    // 회수 대상이면 착륙 유도가 추력 가속도를 더한다 (13단계)
+    let landed = false;
+    if (body.status === 'falling' && body.recovery?.enabled) {
+      const guide = guideBody(body, h);
+      ax += guide.ax;
+      ay += guide.ay;
+      body.thrust = guide.thrust;
+      landed = guide.landed;
+      // 추진제 소모: ṁ = T / (Isp·g₀). 예비 추진제가 바닥나도 착륙은 계속한다 (D-41: 착륙은 항상 성공).
+      // 공기 저항을 생략(D-21)하면 실제 5% 예비로는 부족하므로, 초과분은 기록만 한다
+      if (guide.thrust > 0) {
+        const burned = (guide.thrust / (body.engines.ispVacuumS * STANDARD_GRAVITY)) * h;
+        body.propellant -= burned;
+        body.propellantUsedForLanding = (body.propellantUsedForLanding ?? 0) + burned;
+        body.mass = body.dryMass + Math.max(body.propellant, 0);
+      }
+    } else {
+      body.thrust = 0;
+    }
+
+    body.v.x += ax * h;
+    body.v.y += ay * h;
     body.r.x += body.v.x * h;
     body.r.y += body.v.y * h;
+
     const alt = Math.hypot(body.r.x, body.r.y) - EARTH_RADIUS;
-    if (alt <= 0 && body.status === 'falling') {
+    if ((alt <= 0 || landed) && body.status === 'falling') {
       const n = Math.hypot(body.r.x, body.r.y);
       body.r.x *= EARTH_RADIUS / n;
       body.r.y *= EARTH_RADIUS / n;
@@ -105,8 +131,8 @@ export function createLaunchSimulation(spec, options = {}) {
       body.impactSpeed = speed;
       body.v.x = 0;
       body.v.y = 0;
-      // 13단계 전까지는 착륙 유도가 없으므로 모두 충돌로 기록된다. 유도가 붙으면 저속 접지는 'landed'가 된다
-      body.status = speed < 5 ? 'landed' : 'impact';
+      body.thrust = 0;
+      body.status = landed || speed < 5 ? 'landed' : 'impact';
       pendingEvents.push({ type: body.status, stageId: body.stageId, label: body.label, time, speed });
     }
   }
@@ -250,9 +276,16 @@ export function createLaunchSimulation(spec, options = {}) {
         const body = {
           id: `body-${s.id}`, stageId: s.id, label: s.label,
           r: { ...vehicle.r }, v: { ...vehicle.v },
-          mass: s.dryMass + s.propellant, propellant: s.propellant,
+          mass: s.dryMass + s.propellant, dryMass: s.dryMass, propellant: s.propellant, engines: s.engines,
           recovery: s.recovery, status: s.recovery?.enabled ? 'falling' : 'discarded', separatedAt: time,
+          thrust: 0, targetDownrange: null,
         };
+        // 착륙 목표 지점 (13단계): 착륙장은 고정 거리, 무인선은 분리 시점의 탄도 낙하 예측 지점
+        if (body.status === 'falling') {
+          const site = LANDING_SITES[s.recovery.target] ?? LANDING_SITES.launch_site;
+          body.targetLabel = site.label;
+          body.targetDownrange = site.downrangeM ?? predictedDownrange(body);
+        }
         bodies.push(body);
         pendingEvents.push({
           type: 'separation', stageId: s.id, label: s.label, time,
