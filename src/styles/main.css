@@ -158,6 +158,55 @@ body {
   margin-left: 4px;
 }
 
+/* 결과 표 (5단계) */
+.result-caption {
+  margin: 0 0 10px;
+  color: var(--color-muted);
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-table th,
+.result-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.result-table thead th {
+  color: var(--color-muted);
+  font-weight: normal;
+  font-size: 0.85rem;
+}
+
+.result-table tbody th {
+  width: 30%;
+  font-weight: normal;
+  color: var(--color-muted);
+}
+
+.result-table td:nth-child(3) {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.result-table .result-diff td,
+.result-table .result-diff th {
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+.result-note {
+  margin: 10px 0 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
 .app-footer a {
   color: var(--color-accent);
 }

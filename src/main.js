@@ -8,7 +8,8 @@ import { createSpeedSlider } from './ui/speedSlider.js';
 import { createSpeedPresets } from './ui/speedPresets.js';
 import { createLorentzDisplay } from './ui/lorentzDisplay.js';
 import { createTripTypeSelector } from './ui/tripTypeSelector.js';
-import { computeTimeDilation } from './physics/timeDilation.js';
+import { createResultTable } from './ui/resultTable.js';
+import { computeTimeDilation, TRIP_TYPES } from './physics/timeDilation.js';
 
 // 사용자의 현재 선택을 한곳에 모아 둔다. 뒤 단계의 구성 요소들이 이 값을 읽는다.
 const state = {
@@ -27,8 +28,16 @@ function recompute() {
     speed: state.speed,
     tripType: state.tripType,
   });
-  // 5단계(수치 표), 6단계(스톱워치), 7단계(생물 비교)가 여기서 state.result를 받아 그린다
+  const context = {
+    destinationName: state.destination.name,
+    tripTypeLabel: state.tripType === TRIP_TYPES.ROUND_TRIP ? '왕복' : '편도',
+  };
+  // 5단계: 수치 표. 6단계(스톱워치), 7단계(생물 비교)도 여기서 state.result를 받아 그린다
+  resultTable.update(state.result, context);
 }
+
+// 결과를 그리는 구성 요소들은 입력 구성 요소보다 먼저 만들어야 첫 계산 결과를 받을 수 있다
+const resultTable = createResultTable(document.getElementById('result-table-container'));
 
 // 1단계: 발사장 선택
 createLaunchSiteSelector(

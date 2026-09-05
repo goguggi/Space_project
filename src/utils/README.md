@@ -20,3 +20,4 @@
 |---|---|---|
 | `formatCoordinate.js` | `formatLatitude(deg)`, `formatLongitude(deg)` | 도 단위 실수를 "34.43° N", "80.60° W" 형태로 서식 (1단계) |
 | `units.js` | `kmToMeters`, `metersToKm`, `auToMeters`, `metersToAu`, `lightYearsToMeters`, `metersToLightYears`, `kmPerSecToMetersPerSec`, `metersPerSecToKmPerSec`, `fractionOfCToMetersPerSec`, `metersPerSecToFractionOfC`, `formatDistance(m)`, `formatNumber(v, digits)` | 거리·속도 단위 변환과 거리 자동 단위 서식. 0.01 AU 미만 km, 0.1 광년 미만 AU, 그 이상 광년, 1만 광년 이상 "만 광년" (2단계) |
+| `formatTime.js` | `splitDuration(s)`, `formatYears(y)`, `formatSubSecond(s)`, `formatDuration(s)`, `formatDurationApprox(s)` | 초 → 년/일/시/분/초 분해와 문자열. 100만 년 이상은 "만 년/억 년/조 년", 1초 미만은 밀리초/마이크로초/나노초. `formatDurationApprox`는 "≈ 4.29년"처럼 한 단위 요약 (5단계) |

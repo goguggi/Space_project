@@ -39,5 +39,8 @@
 | `speedPresets.js` | `createSpeedPresets(container, onSelect)` | 프리셋 버튼 6개. 누르면 `onSelect(speed)` |
 | `lorentzDisplay.js` | `createLorentzDisplay(container)`, `formatGamma(v)` | 표시 전용(비활성) 선형 슬라이더 γ = 1 ~ 7.09와 숫자. 반환값 `update(speed)`. γ−1 < 10⁻⁴이면 지수 표기 |
 | `tripTypeSelector.js` | `createTripTypeSelector(container, onChange)` | 편도 / 왕복 라디오 버튼. 값은 `TRIP_TYPES` (physics/timeDilation.js). 반환값 `getTripType()` |
+| `resultTable.js` | `createResultTable(container)` | 지구 시간 / 우주선 시간 / 차이 표와 요약, γ 안내문. 반환값 `update(result, {destinationName, tripTypeLabel})` |
+
+- 결과를 그리는 구성 요소(`resultTable` 등)는 `main.js`에서 입력 구성 요소보다 먼저 만든다. 입력 구성 요소가 생성 직후 첫 값을 알리며 `recompute()`가 호출되기 때문이다.
 
 - `main.js`에서 로런츠 표시를 속도 슬라이더보다 먼저 만든다. 슬라이더가 생성 직후 첫 속도를 알리기 때문이다.
