@@ -74,6 +74,11 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       if (!group) continue;
       group.position.set(...toScene(body.r));
       const flame = rocket.flames.get(body.stageId);
+      // 무인선: 유도가 착륙 지점을 확정하는 순간(부스트백 종료) 그 위치에 놓는다
+      if (body.recovery?.target === 'drone_ship' && body.targetDownrange != null && !droneShip) {
+        droneShip = createDroneShip(body.targetDownrange, LANDING_SITES.drone_ship.label);
+        scene.scene.add(droneShip);
+      }
       if (body.recovery?.enabled) {
         group.rotation.z = -Math.atan2(body.r.x, body.r.y);   // 국소 수직 = 지구 중심 반대 방향
         if (flame) flame.visible = body.thrust > 0;
@@ -90,11 +95,6 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       if (e.type === 'separation' && e.body) {
         const group = rocket.detachStage(e.stageId, scene.scene);
         if (group) detachedGroups.set(e.body.id, group);
-        // 무인선 착륙 대상이면 그 위치에 무인선을 놓는다
-        if (e.body.recovery?.target === 'drone_ship' && e.body.targetDownrange != null && !droneShip) {
-          droneShip = createDroneShip(e.body.targetDownrange, LANDING_SITES.drone_ship.label);
-          scene.scene.add(droneShip);
-        }
       }
     }
   }

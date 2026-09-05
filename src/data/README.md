@@ -19,7 +19,6 @@
 | `rockets.js` | 속도 슬라이더 하한(팔콘 헤비 11.2 km/s), 상한(0.99c), 프리셋 6개 | 3단계 |
 | `organisms.js` | 생물 5종: 이름, 대표 수명(s), 출처 | 7단계 |
 | `falconHeavy.js` | 팔콘 헤비 각 단의 건조 질량, 추진제 질량, 추력, 비추력. 형식은 로켓 제원 JSON의 `stages[]`와 동일 | 11단계 |
-| `landingSites.js` | (아래 현재 파일 목록으로 이동) | 13단계 |
 | `rocketSpecSchema.js` | 로켓 제원 JSON 형식의 필수 필드 정의 | 16단계 |
 
 ## 현재 파일 목록
@@ -32,7 +31,7 @@
 
 | `rockets.js` | `SPEED_MIN`, `SPEED_MAX`, `SPEED_PRESETS`, `DEFAULT_SPEED` | 슬라이더 하한 11.2 km/s, 상한 0.99c, 프리셋 6개 (m/s) |
 | `falconHeavy.js` | `FALCON_HEAVY` | 팔콘 헤비 기본 제원. 로켓 제원 JSON 계약(docs/08 6절)과 같은 형식: `payloadMassKg`, `stages[]`(부스터 2, 코어, 2단), `geometry.parts[]`(3D 형상). 16단계에서 설계 로켓으로 교체 가능 (11단계) |
-| `landingSites.js` | `LANDING_SITES`, `GUIDANCE` | 착륙장(진행 방향 2 km, 가상)과 무인선(탄도 예측 지점) 정의, 착륙 유도 매개변수(관성 5초, 부스트백 3g, 착륙 4g, 수평 보정 0.5g, 접지 3 m/s) (13단계, 진행 중) |
+| `landingSites.js` | `LANDING_SITES`, `GUIDANCE` | 착륙장(진행 방향 2 km, 가상)과 무인선(부스트백 종료 지점 아래, null) 정의. 유도 매개변수: 관성 5초, 부스트백 3g, 계획 감속 3g, 착륙 상한 4g, 수평 보정 1g, 최종 접근 100 m, 정렬 한도 10 m·3 m/s, 접지 1.5 m·3 m/s (13단계) |
 | `organisms.js` | `ORGANISMS`, `AGE_UNIT_SECONDS`, `AGE_UNIT_LABEL` | 생물 5종 (id, 이름, 아이콘, 수명 초, 수명 표시 문자열, 출발 나이 입력 단위, 출처). 하루살이는 나이 단위가 시간, 나머지는 년 |
 
 - `destinations.js`와 `rockets.js`는 같은 폴더의 `constants.js`만 불러온다. (`utils/`를 쓰지 않는 이유: 이 폴더는 다른 폴더를 모른다는 규칙)

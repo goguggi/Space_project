@@ -13,10 +13,21 @@ export const LANDING_SITES = {
 
 // 착륙 유도 매개변수. 물리 법칙이 아닌 조정값이며, 착륙이 항상 성공하도록 정했다 (D-41)
 export const GUIDANCE = {
-  coastSeconds: 5,        // 분리 후 부스트백 시작까지 관성 비행 (s)
-  boostbackMaxG: 3,       // 부스트백 최대 가속도 (g 배수)
-  landingMaxG: 4,         // 착륙 연소 최대 감속도 (g 배수)
-  lateralMaxG: 0.5,       // 낙하·착륙 중 수평 오차 보정 최대 가속도 (g 배수)
-  touchdownSpeed: 3,      // 이 속도(m/s) 이하로 접지하면 착륙 성공
-  landingMarginM: 50,     // 착륙 연소 시작 고도 여유 (m)
+  coastSeconds: 5,            // 분리 후 부스트백 시작까지 관성 비행 (s)
+  boostbackMaxG: 3,           // 부스트백 최대 가속도 (g 배수)
+  planDecelG: 3,              // 착륙 연소 시작 고도를 계산할 때 쓰는 계획 감속도 (g 배수). 실제 상한보다 작게 두어 여유 확보
+  landingMaxG: 4,             // 착륙 연소 최대 감속도 (g 배수)
+  lateralMaxG: 1.0,           // 낙하·착륙 중 수평 오차 보정 최대 가속도 (g 배수)
+  alignPositionM: 10,         // 최종 접근에서 하강을 시작하기 위한 수평 위치 오차 한도 (m)
+  alignSpeed: 3,              // 최종 접근에서 하강을 시작하기 위한 수평 속도 한도 (m/s)
+  landingMarginM: 200,        // 착륙 연소 시작 고도 여유 (m)
+  finalApproachM: 100,        // 이 고도(m) 아래에서는 부드러운 최종 접근
+  finalDescentRate: 0.15,     // 최종 접근 목표 하강 속도 = 고도 × 이 값 (1/s)
+  finalMinDescent: 1.5,       // 최종 접근 최소 하강 속도 (m/s)
+  finalGain: 2,               // 최종 접근 속도 오차 → 가속도 이득 (1/s)
+  terminalPositionTau: 15,    // 착륙 연소 중 위치 오차를 줄이는 시간 상수 (s)
+  terminalVelocityTau: 4,     // 착륙 연소 중 수평 속도를 맞추는 시간 상수 (s)
+  terminalMaxLateralSpeed: 120,// 착륙 연소 중 최대 수평 이동 속도 (m/s)
+  touchdownAltitude: 1.5,     // 접지 판정 고도 (m)
+  touchdownSpeed: 3,          // 접지 판정 속도 (m/s): 수직·수평 모두 이 이하
 };

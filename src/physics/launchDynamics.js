@@ -132,7 +132,8 @@ export function createLaunchSimulation(spec, options = {}) {
       body.v.x = 0;
       body.v.y = 0;
       body.thrust = 0;
-      body.status = landed || speed < 5 ? 'landed' : 'impact';
+      body.status = landed ? 'landed' : 'impact';
+      body.landedDownrange = EARTH_RADIUS * Math.atan2(body.r.x, body.r.y);
       pendingEvents.push({ type: body.status, stageId: body.stageId, label: body.label, time, speed });
     }
   }
@@ -280,11 +281,12 @@ export function createLaunchSimulation(spec, options = {}) {
           recovery: s.recovery, status: s.recovery?.enabled ? 'falling' : 'discarded', separatedAt: time,
           thrust: 0, targetDownrange: null,
         };
-        // 착륙 목표 지점 (13단계): 착륙장은 고정 거리, 무인선은 분리 시점의 탄도 낙하 예측 지점
+        // 착륙 목표 지점 (13단계): 착륙장은 고정 거리, 무인선은 null로 두면 유도가 부스트백을 끝낸 자리 아래로 정한다
         if (body.status === 'falling') {
           const site = LANDING_SITES[s.recovery.target] ?? LANDING_SITES.launch_site;
           body.targetLabel = site.label;
-          body.targetDownrange = site.downrangeM ?? predictedDownrange(body);
+          body.targetDownrange = site.downrangeM ?? null;
+          body.ballisticDownrangeAtSeparation = predictedDownrange(body);   // 참고용 기록
         }
         bodies.push(body);
         pendingEvents.push({

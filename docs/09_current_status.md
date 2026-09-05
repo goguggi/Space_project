@@ -12,10 +12,10 @@
 |---|---|
 | 저장소 | https://github.com/goguggi/Space_project (main 브랜치) |
 | 게시 사이트 | https://goguggi.github.io/Space_project/ (GitHub Pages, main 루트, 푸시하면 1~2분 뒤 자동 갱신) |
-| 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12 |
-| 진행 중 | **13단계 (재착륙 유도)** — 코드는 올라가 있으나 검증 미완료 (3절) |
-| 남은 단계 | 13 마무리 → 14 → 15 → 16 → 8 → 9 (순서는 [04_roadmap.md](04_roadmap.md)) |
-| 검증 | `tests/physics.test.html` 19 / 19 통과 (13단계 변경 전 기준) |
+| 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13 |
+| 진행 중 | 없음. 다음은 **14단계 (화면 분할 카메라와 HUD 확장)** |
+| 남은 단계 | 14 → 15 → 16 → 8 → 9 (순서는 [04_roadmap.md](04_roadmap.md)) |
+| 검증 | `tests/physics.test.html` 26 / 26 통과 |
 
 ## 2. 완료된 것
 
@@ -32,32 +32,27 @@
 | 10 | Three.js r170 동봉, 3D 장면(실제 비율 지구, 발사대, 별) | `lib/three/`, `src/launch/launchScene.js` |
 | 11 | 팔콘 헤비 제원, 발사 물리(추력·중력·질량·단 분리·피치 프로그램), 로켓 모델, 추적 카메라, HUD, 발사 버튼 | `src/data/falconHeavy.js`, `src/physics/launchDynamics.js`, `src/launch/*`, `src/ui/launchButton.js` |
 | 12 | 분리된 단의 독립 낙하, 3D에서 단 떼어내기, 우주선 출발 후에도 진행 | `launchDynamics.js`(bodies), `rocketModel.js`(detachStage), `launchController.js` |
+| 13 | 재착륙 유도: 부스트백 → 낙하 → 호버슬램 → 최종 접근. 부스터는 착륙장(2 km), 코어는 무인선에 1.5 m/s로 착륙 | `src/data/landingSites.js`, `src/physics/landingGuidance.js`, `src/launch/landingSiteModel.js` |
 | 기능 2 계획 | 로켓 설계 프로그램 인수 문서, JSON 계약 예제 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md), `docs/examples/falcon_heavy.rocket.json` |
 
-## 3. 진행 중: 13단계 재착륙 유도 (검증 미완료)
+## 3. 다음 할 일: 14단계 화면 분할 카메라와 HUD (아직 시작 안 함)
 
-**만든 파일** (커밋됨, 동작은 부분적)
-- `src/data/landingSites.js`: 착륙장(발사대에서 진행 방향 2 km, 가상), 무인선(코어 분리 시점의 탄도 낙하 예측 지점), 유도 매개변수
-- `src/physics/landingGuidance.js`: 국소 평면 근사로 남은 낙하 시간·낙하 지점 예측, 단계 기계(coast 5초 → boostback → fall → landing → landed), 호버슬램 착륙 연소
-- `src/launch/landingSiteModel.js`: 착륙장 패드와 무인선 3D 모델
-- `launchDynamics.js`: 회수 단에 유도 가속도 적용, 착륙 연료 소모 기록 (예비 5%를 초과해도 착륙은 계속: D-41과 D-21의 결과)
-- `launchController.js`: 착륙장 항상 표시, 코어 분리 시 무인선 생성, 회수 단은 국소 수직 자세로 하강, 착륙 연소 중 화염 표시
+[04_roadmap.md](04_roadmap.md) 14단계 항목을 따른다. 요지:
+- `src/launch/pipView.js`: 착륙 장면용 보조 화면. 보조 화면 1개, 가장 가까운 착륙 대상(부스터 → 코어)으로 자동 전환 (D-42). Three.js에서는 같은 장면을 두 번째 카메라로 렌더러의 일부 영역(setViewport / setScissor)에 그리면 된다.
+- `src/launch/launchHud.js` 확장: 현재 기본형(시계, 단계, 고도, 속도, 질량, 배속, 건너뛰기)에 착륙 대상의 고도·속도와 착륙 단계(부스트백/낙하/착륙 연소)를 추가.
+- 완료 조건: 분리 후 주 화면은 2단을, 보조 화면은 착륙 중인 부스터/코어를 보여준다. 건너뛰기를 누르면 즉시 끝난다.
 
-**마지막 검증 결과** (건너뛰기로 전체 실행)
+13단계에서 알게 된 것 (14단계 카메라에 참고):
+- 분리된 단의 3D 그룹은 `launchController.js`의 `detachedGroups`(물체 id → THREE.Group)에 있다. 물체 상태는 `timeline.sim.bodies` (`status`, `guidance.phase`, `thrust`).
+- 부스터 착륙은 T+10:42, 코어 착륙은 T+12:01 (건너뛰기 없이 10배속이면 실제 약 72초).
+- 무인선은 발사장에서 약 451 km 지점에 생긴다. 주 카메라가 2단을 따라가므로 착륙 장면은 보조 화면이 아니면 보이지 않는다.
 
-| 물체 | 결과 | 접지 속도 | 목표 / 실제 위치 |
-|---|---|---|---|
-| 측면 부스터 2기 | **충돌 (실패)** | 146.5 m/s | 목표 +2 km / 실제 −2 km |
-| 중앙 코어 | 착륙 성공 | 2,666 m/s로 기록됨 (판정은 landed) | 목표 1,782 km / 실제 1,891 km |
+**마지막 검증 결과** (건너뛰기로 전체 실행, 2026-09-05)
 
-**남은 문제와 짚어볼 곳**
-1. 부스터가 부스트백으로 되돌아온 뒤 착륙 연소가 늦게 시작되거나 감속 상한(4g)이 부족해 146 m/s로 접지한다.
-   `landingGuidance.js`의 `fall` 단계에서 `landingBurnAltitude`에 여유(`landingMarginM`)를 더 주거나, `landing` 단계에서 `needed` 감속 계산이 고도 0.5 m 하한 때문에 막판에 튀는지 확인한다.
-2. 코어는 `landed` 판정이 났는데 `impactSpeed`가 2,666 m/s로 기록되어 있다. 접지 판정(`landed || alt <= 0`) 순서와 속도 기록 시점을 점검한다. 실제 위치도 목표에서 109 km 벗어난다(수평 보정 상한 0.5g가 부족하거나 예측 근사 오차).
-3. 공기 저항이 없어(D-21) 재진입 속도가 실제보다 훨씬 커서 착륙 연료가 예비 5%를 크게 넘는다(부스터 39 t, 코어 31 t). 이는 문서화된 한계이며, 필요하면 [06_decisions.md](06_decisions.md)에 결정 항목으로 추가한다.
-4. 부스터 접지 속도 5 m/s 미만이 되면 `tests/physics.test.js`에 "부스터·코어 착륙 성공" 검증 항목을 추가한다.
-
-**13단계 완료 조건** ([04_roadmap.md](04_roadmap.md)): 부스터 2기는 착륙장에, 코어는 무인선에 속도 거의 0으로 내려앉는다.
+| 물체 | 결과 | 접지 속도 | 목표 / 실제 위치 | 착륙 연료 |
+|---|---|---|---|---|
+| 측면 부스터 2기 | 착륙 성공 (T+10:42) | 1.5 m/s | 2,000 m / 2,001 m | 45 t |
+| 중앙 코어 | 착륙 성공 (T+12:01) | 1.5 m/s | 무인선 451 km / 451 km | 56 t |
 
 ## 4. 다른 컴퓨터에서 Claude Code가 이어서 하는 절차
 
@@ -67,15 +62,15 @@
 1. 이 문서와 [04_roadmap.md](04_roadmap.md)의 다음 단계, [06_decisions.md](06_decisions.md)의 결정·미결 질문을 읽는다.
 2. 환경 확인: `git config user.name`이 비어 있으면 커밋 명령에 `-c user.name="genai06" -c user.email="genai06@cdsai.kr"`를 붙인다. PowerShell·Python·Node 중 무엇이 있는지 확인한다.
 3. 로컬 서버를 띄운다. `.claude/launch.json`의 `local-server`(PowerShell 스크립트 `tools/serve.ps1`)를 쓰고, PowerShell이 없으면 `python -m http.server 8000`으로 바꿔 `launch.json`을 고친다.
-4. http://localhost:8000/tests/physics.test.html 에서 "19 / 19 통과"를 확인한다. (13단계 코드가 검증 결과를 바꾸면 안 된다)
-5. 3절의 "남은 문제"부터 13단계를 이어서 구현한다. 완료 조건을 만족하면 커밋·푸시하고 이 문서를 갱신한다.
+4. http://localhost:8000/tests/physics.test.html 에서 "26 / 26 통과"를 확인한다.
+5. 3절의 다음 단계(14단계)를 구현한다. 완료 조건을 만족하면 커밋·푸시하고 이 문서를 갱신한다.
 6. 푸시 시 GitHub 로그인 창이 뜨면 사용자에게 로그인만 요청한다.
 
 ## 5. 이어서 할 때 읽는 순서 (Claude Code용)
 
 1. `CLAUDE.md` (규칙) → 이 문서 (현재 상황)
-2. [04_roadmap.md](04_roadmap.md) 13단계 항목과 [03_physics.md](03_physics.md) 6.5절 (착륙 유도 공식)
-3. `src/physics/landingGuidance.js`, `src/physics/launchDynamics.js`의 `integrateBody`, `src/launch/launchController.js`의 `placeBodies`·`handleEvents`
+2. [04_roadmap.md](04_roadmap.md) 14단계 항목과 [06_decisions.md](06_decisions.md)의 D-24(화면 분할), D-42(보조 화면 1개 자동 전환)
+3. `src/launch/launchController.js`(`detachedGroups`, `placeBodies`), `src/launch/launchScene.js`(렌더러·카메라), `src/launch/launchHud.js`
 4. 결정이 필요한 일이 생기면 [06_decisions.md](06_decisions.md) 4절에 Q-번호로 적고 사용자에게 묻는다
 
 ## 5.1 이번 세션에서 검증에 쓴 방법 (같은 방식으로 이어서 검증)
@@ -91,7 +86,7 @@ s.bodies.map(b => `${b.stageId}: ${b.status} 접지속도=${(b.impactSpeed||0).t
 window.__state.launch.timeline.getEvents().map(e => e.type + ':' + (e.label||'') + '@' + Math.round(e.time));
 ```
 
-13단계 완료 기준: 부스터 2기 `status === 'landed'`, 접지 속도 3 m/s 이하, 실제 위치가 목표(2,000 m)에서 수백 m 이내. 코어는 무인선 위치(탄도 예측 지점)에 같은 조건.
+이 기준은 `tests/physics.test.js`의 재착륙 검증 7개로 자동 확인된다. 주의: 브라우저의 ES 모듈 캐시 때문에 코드를 고친 뒤에는 페이지를 새로 불러와야(주소 뒤에 `?r=2` 같은 값을 붙여) 바뀐 모듈이 실행된다.
 
 ## 6. 알아 둘 것
 

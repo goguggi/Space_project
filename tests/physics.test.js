@@ -60,13 +60,28 @@ cases.push(['치올콥스키 Δv (중력 없음, 1단)', expectedDeltaV, noGravi
 const fh = createLaunchSimulation(FALCON_HEAVY, { stepSeconds: 1 / 20 });
 const fhEvents = [];
 while (!fh.isComplete() && fh.getTime() < 1200) fhEvents.push(...fh.step(1));
+const upperBurnoutAltitude = fh.getAltitude();
+const upperBurnoutSpeed = fh.getSpeed();
+// 회수 단이 모두 접지할 때까지 계속 (13단계)
+while (!fh.isAllSettled() && fh.getTime() < 2400) fhEvents.push(...fh.step(1));
 const boosterSep = fhEvents.find((e) => e.type === 'separation' && e.stageId === 'booster-left');
 const coreSep = fhEvents.find((e) => e.type === 'separation' && e.stageId === 'core');
 cases.push(['팔콘 헤비 부스터 분리 시각 (s, 실제 약 150)', 150, boosterSep ? boosterSep.time : 0, 0.15]);
 cases.push(['팔콘 헤비 코어 분리 시각 (s, 실제 약 185)', 185, coreSep ? coreSep.time : 0, 0.15]);
-cases.push(['팔콘 헤비 2단 종료 고도 ≥ 200 km (km)', 200, Math.min(fh.getAltitude() / 1000, 200), 1e-6]);
-cases.push(['팔콘 헤비 2단 종료 속도 ≥ 7.8 km/s (km/s)', 7.8, Math.min(fh.getSpeed() / 1000, 7.8), 1e-6]);
+cases.push(['팔콘 헤비 2단 종료 고도 ≥ 200 km (km)', 200, Math.min(upperBurnoutAltitude / 1000, 200), 1e-6]);
+cases.push(['팔콘 헤비 2단 종료 속도 ≥ 7.8 km/s (km/s)', 7.8, Math.min(upperBurnoutSpeed / 1000, 7.8), 1e-6]);
 cases.push(['팔콘 헤비 추락 없음 (1 = 정상)', 1, fhEvents.some((e) => e.type === 'crash') ? 0 : 1, 1e-9]);
+
+// ---- 재착륙 (13단계): 부스터는 착륙장(2,000 m), 코어는 무인선에 3 m/s 이하로 내려앉아야 한다 (docs/03_physics.md 6.5절, D-41) ----
+const boosterBody = fh.bodies.find((b) => b.stageId === 'booster-left');
+const coreBody = fh.bodies.find((b) => b.stageId === 'core');
+cases.push(['부스터 착륙 성공 (1 = landed)', 1, boosterBody?.status === 'landed' ? 1 : 0, 1e-9]);
+cases.push(['부스터 접지 속도 ≤ 3 m/s (m/s)', 3, Math.max(boosterBody?.impactSpeed ?? 99, 3), 1e-6]);
+cases.push(['부스터 착륙 위치 = 착륙장 2,000 m (m, ±50)', 2000, boosterBody?.landedDownrange ?? 0, 0.025]);
+cases.push(['코어 착륙 성공 (1 = landed)', 1, coreBody?.status === 'landed' ? 1 : 0, 1e-9]);
+cases.push(['코어 접지 속도 ≤ 3 m/s (m/s)', 3, Math.max(coreBody?.impactSpeed ?? 99, 3), 1e-6]);
+cases.push(['코어 착륙 위치 = 무인선 위치 (m)', coreBody?.targetDownrange ?? 1, coreBody?.landedDownrange ?? 0, 1e-3]);
+cases.push(['모든 회수 단 접지 완료 (1 = 정상)', 1, fh.isAllSettled() ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');
