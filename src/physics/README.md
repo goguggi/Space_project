@@ -28,3 +28,4 @@
 |---|---|---|
 | `lorentz.js` | `beta(v)`, `gamma(v)`, `gammaMinusOne(v)`, `oneMinusInverseGamma(v)` | 입력 m/s. β < 10⁻³이면 테일러 급수, 아니면 직접 계산 (docs/03_physics.md 3.1절). 검증값: 0.99c → γ 7.0888, 11.2 km/s → γ−1 6.98×10⁻¹⁰ |
 | `timeDilation.js` | `computeTimeDilation({distance, speed, tripType})`, `TRIP_TYPES` | 등속 모델. 입력 m, m/s. 출력 `{earthTime, shipTime, difference, gamma, totalDistance}` (초, m). 왕복은 거리 2배. `difference`는 t_지구 × (1 − 1/γ)로 정밀 계산 |
+| `survival.js` | `judgeSurvival(organism, departureAge, elapsed)`, `judgeAll(organisms, ages, result)` | 생존 판정: 출발 나이 + 경과 시간 < 수명 (D-33). `judgeAll`은 생물마다 우주선 탑승(`onShip`)과 지구 잔류(`onEarth`) 두 경우를 돌려준다 |

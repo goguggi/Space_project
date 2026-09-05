@@ -40,6 +40,12 @@
 | `lorentzDisplay.js` | `createLorentzDisplay(container)`, `formatGamma(v)` | 표시 전용(비활성) 선형 슬라이더 γ = 1 ~ 7.09와 숫자. 반환값 `update(speed)`. γ−1 < 10⁻⁴이면 지수 표기 |
 | `tripTypeSelector.js` | `createTripTypeSelector(container, onChange)` | 편도 / 왕복 라디오 버튼. 값은 `TRIP_TYPES` (physics/timeDilation.js). 반환값 `getTripType()` |
 | `resultTable.js` | `createResultTable(container)` | 지구 시간 / 우주선 시간 / 차이 표와 요약, γ 안내문. 반환값 `update(result, {destinationName, tripTypeLabel})` |
+| `stopwatch.js` | `createStopwatch(container)`, `animationDurationMs(s)`, `formatStopwatch(s)` | 지구/우주선 스톱워치 2개. `start(result)`로 0부터 결과값까지 재생, 길이는 지구 시간의 log10에 비례해 3~15초. 두 시계가 같은 시간 동안 움직여 우주선 시계가 느리게 보임 (6단계) |
+| `departureAgeInput.js` | `createDepartureAgeInput(container, onChange)` | 생물별 출발 나이 숫자 입력(기본 0). 콜백에는 id → 초 로 변환해 넘김 (7단계) |
+| `lifespanChart.js` | `createLifespanChart(container)` | 로그 눈금 div 막대. 행마다 수명(회색), 출발 전 기간(갈색), 지구 시간(파랑), 우주선 시간(초록)을 겹쳐 그림. 하한 1시간. `update(result, ages)` (7단계) |
+| `survivalIcons.js` | `createSurvivalIcons(container)` | 생물별 "우주선에 탔다면 / 지구에 남았다면" 생존·사망 아이콘과 남은 수명. `update(judgements)` (7단계) |
+
+- `main.js`의 `renderLifespan()`은 출발 나이만 바뀌었을 때 시간 지연을 다시 계산하지 않고 7단계 표시만 갱신한다.
 
 - 결과를 그리는 구성 요소(`resultTable` 등)는 `main.js`에서 입력 구성 요소보다 먼저 만든다. 입력 구성 요소가 생성 직후 첫 값을 알리며 `recompute()`가 호출되기 때문이다.
 

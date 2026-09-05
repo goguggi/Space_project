@@ -45,11 +45,25 @@
       <div id="result-table-container"></div>
     </section>
 
-    <!-- 6단계 이후의 구성 요소는 여기에 순서대로 추가된다 -->
+    <!-- 6단계: 스톱워치 애니메이션 -->
+    <section class="panel" id="stopwatch-panel">
+      <h2>6. 스톱워치</h2>
+      <div id="stopwatch-container"></div>
+    </section>
+
+    <!-- 7단계: 생물 수명 비교 -->
+    <section class="panel" id="lifespan-panel">
+      <h2>7. 생물 수명과 비교</h2>
+      <div id="departure-age-container"></div>
+      <div id="lifespan-chart-container"></div>
+      <div id="survival-container"></div>
+    </section>
+
+    <!-- 발사 시뮬레이션(10~15단계) 등 이후 구성 요소는 여기에 추가된다 -->
   </main>
 
   <footer class="app-footer">
-    <p>단계별 개발 중 · 현재 5단계(결과 표) · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
+    <p>단계별 개발 중 · 현재 7단계(생물 비교) · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
   </footer>
 
   <!-- ES 모듈 진입점. file:// 로 열면 동작하지 않으므로 로컬 서버로 연다 (docs/02_architecture.md 5절) -->

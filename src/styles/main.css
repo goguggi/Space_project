@@ -207,6 +207,182 @@ body {
   font-size: 0.9rem;
 }
 
+/* 스톱워치 (6단계) */
+.stopwatch-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .stopwatch-row { grid-template-columns: 1fr; }
+}
+
+.stopwatch {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.stopwatch-title {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.stopwatch-display {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  min-height: 1.6em;
+}
+
+.stopwatch-status {
+  margin-top: 8px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+/* 출발 나이 입력 (7단계) */
+.age-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+  margin-bottom: 18px;
+}
+
+.age-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 40px;
+  align-items: center;
+  gap: 6px;
+}
+
+.age-input {
+  width: 100%;
+  padding: 4px 6px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.age-unit {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+/* 수명 막대 그래프 (7단계) */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+
+.swatch-life, .bar-life { background: #3a4670; }
+.swatch-age, .bar-age { background: #7c6a4a; }
+.swatch-earth, .bar-earth { background: var(--color-accent); }
+.swatch-ship, .bar-ship { background: #4fd1a0; }
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+}
+
+.chart-name {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-track {
+  position: relative;
+  height: 26px;
+  background: var(--color-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.bar-life { top: 0; height: 26px; }
+.bar-age { top: 0; height: 26px; opacity: 0.9; }
+.bar-earth { top: 4px; height: 8px; }
+.bar-ship { top: 14px; height: 8px; }
+
+.chart-axis {
+  position: relative;
+  height: 20px;
+  margin-left: 180px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.chart-tick {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.chart-tick::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 5px;
+  background: var(--color-border);
+  margin: 0 auto 2px;
+}
+
+/* 생존 표 (7단계) */
+.survival-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 18px;
+  font-size: 0.9rem;
+}
+
+.survival-table th,
+.survival-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.survival-table thead th {
+  color: var(--color-muted);
+  font-weight: normal;
+  font-size: 0.85rem;
+}
+
+.survival-table .muted { color: var(--color-muted); }
+.survival-table .alive strong { color: #4fd1a0; }
+.survival-table .dead strong { color: #ff7a7a; }
+.survival-table small { color: var(--color-muted); }
+
 .app-footer a {
   color: var(--color-accent);
 }
