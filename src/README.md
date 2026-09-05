@@ -11,6 +11,7 @@
 | [physics/](physics/README.md) | 계산 로직 (순수 함수) | data | 화면(DOM) |
 | [utils/](utils/README.md) | 단위 변환, 숫자 서식 | data | 화면(DOM) |
 | [ui/](ui/README.md) | 화면 구성 요소 | data, physics, utils | 없음 |
+| [launch/](launch/README.md) | 3D 발사 장면 (Three.js) | data, physics, utils, lib/three | 없음 |
 | [styles/](styles/README.md) | CSS | 없음 | 없음 |
 
 ## 의존 방향
@@ -19,7 +20,12 @@
 ui  →  physics  →  data
 ui  →  utils    →  data
 ui  →  styles
+launch  →  physics  →  data
+launch  →  lib/three
+ui  →  launch   (발사 버튼이 장면을 시작시킴)
 ```
+
+Three.js는 `launch/` 안의 파일에서만 불러온다.
 
 화살표 반대 방향의 의존은 금지한다. 예를 들어 `physics/`의 파일이 `ui/`의 파일을 불러오면 안 된다.
 

@@ -24,6 +24,7 @@
 | `lifespanChart.js` | 생물별 수명 대비 경과 시간 막대 그래프 | 7단계 |
 | `survivalIcons.js` | 생물별 도착 시점 생존/사망 아이콘 | 7단계 |
 | `motionModelSelector.js` | 등속 / 가속-감속 모델 선택 | 8단계 (후순위) |
+| `launchButton.js` | "발사" 버튼, 발사 장면 시작과 결과 화면 전환 | 11단계, 15단계 |
 
 ## 현재 파일 목록
 
