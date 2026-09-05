@@ -102,4 +102,5 @@ window.__state.launch.timeline.getEvents().map(e => e.type + ':' + (e.label||'')
 - 브라우저 탭이 숨겨지면 애니메이션 프레임이 멈춘다. 발사 장면은 setTimeout으로 시뮬레이션만 계속 돌리도록 해 두었지만, 화면 확인은 탭을 앞에 둔 상태에서 한다.
 - `tools/serve.ps1`은 UTF-8 BOM으로 저장해야 한다 (한글 주석 때문). 편집 후 BOM이 사라지면 PowerShell이 구문 오류를 낸다.
 - 개발 중 브라우저 콘솔에서 `window.__state` 로 현재 선택값·계산 결과·발사 컨트롤러를 볼 수 있다. `window.__state.launch.timeline.sim.bodies` 가 분리된 단들의 상태다.
+- 서버 없이 볼 수 있는 파일 하나짜리 실행본이 저장소 최상위에 있다: `열기.html`(본체), `검증.html`(검증 페이지). `tools/build_single.py`가 만든다. **코드를 고치면 반드시 다시 실행해서 갱신한다.**
 - 로켓 설계 담당 팀원에게는 [08_rocket_design_handoff.md](08_rocket_design_handoff.md)와 `docs/examples/falcon_heavy.rocket.json`을 전달한다. 설계 저장소 주소는 아직 미정(Q-23).
