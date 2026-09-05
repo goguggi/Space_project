@@ -16,14 +16,16 @@
 |---|---|---|
 | `launchSiteSelector.js` | 발사장 선택 메뉴, 선택한 발사장 정보 표시 | 1단계 |
 | `destinationSelector.js` | 구분별 천체 선택 메뉴, 거리 표시 | 2단계 |
-| `speedSlider.js` | 속도 슬라이더 (11.2 km/s ~ 0.99c), 속도 표시 | 3단계 |
-| `lorentzDisplay.js` | 로런츠 인자 슬라이더 표시 | 3단계 |
+| `speedSlider.js` | 로그 눈금 속도 슬라이더 (11.2 km/s ~ 0.99c), 속도 표시 | 3단계 |
+| `speedPresets.js` | 프리셋 버튼 6개 (보이저 1호, 파커, 0.1c, 0.5c, 0.9c, 0.99c) | 3단계 |
+| `lorentzDisplay.js` | 로런츠 인자 표시 전용 슬라이더 | 3단계 |
 | `tripTypeSelector.js` | 편도 / 왕복 선택 | 4단계 |
 | `resultTable.js` | 지구 시간 / 우주선 시간 / 차이 수치 표 | 5단계 |
-| `stopwatch.js` | 0에서 결과값까지 올라가는 스톱워치 애니메이션 | 6단계 |
-| `lifespanChart.js` | 생물별 수명 대비 경과 시간 막대 그래프 | 7단계 |
+| `stopwatch.js` | 0에서 결과값까지 올라가는 스톱워치 애니메이션 (자동 시작, 3~15초, 년/일/시/분/초) | 6단계 |
+| `departureAgeInput.js` | 생물별 출발 시점 나이 입력란 (기본값 0) | 7단계 |
+| `lifespanChart.js` | 생물별 수명 대비 경과 시간 막대 그래프 (HTML/CSS div, 로그 눈금) | 7단계 |
 | `survivalIcons.js` | 생물별 도착 시점 생존/사망 아이콘 | 7단계 |
-| `motionModelSelector.js` | 등속 / 가속-감속 모델 선택 | 8단계 (후순위) |
+| `motionModelSelector.js` | 등속 / 가속-감속(1g 고정) 모델 선택 | 8단계 |
 | `launchButton.js` | "발사" 버튼, 발사 장면 시작과 결과 화면 전환 | 11단계, 15단계 |
 
 ## 현재 파일 목록

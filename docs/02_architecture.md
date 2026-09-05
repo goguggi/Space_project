@@ -64,21 +64,23 @@ team_project/
 - 물리 상수는 `src/data/constants.js`에 한 곳에만 정의하고, 정의 옆에 출처를 주석으로 남긴다.
 - 함수마다 입력 단위와 출력 단위를 주석에 명시한다. (예: `// 입력: 속도 m/s, 출력: 무차원`)
 
-## 5. 스크립트 로딩 방식 (미결)
+## 5. 스크립트 로딩과 실행 방식 (확정, D-27)
 
-브라우저에서 `index.html`을 더블클릭(file:// 프로토콜)으로 열면
-ES 모듈(`import`/`export`)이 보안 정책 때문에 동작하지 않는다.
-선택지는 다음과 같으며, 결정은 [06_decisions.md](06_decisions.md)의 미결 질문 항목에 있다.
+- 모든 소스 파일은 **ES 모듈**(`import` / `export`)로 작성한다.
+- 프로그램은 **GitHub Pages**(main 브랜치 루트)로 게시하며, 웹 서버를 통해 열리므로 ES 모듈과 최신 Three.js가 그대로 동작한다.
+- 로컬에서 확인할 때는 `index.html`을 더블클릭하지 말고 로컬 서버로 연다. (file:// 프로토콜에서는 ES 모듈이 브라우저 보안 정책에 막힌다.)
+  예: VS Code의 Live Server 확장, 또는 아래 명령 후 `http://localhost:8000` 접속
 
-| 방식 | 장점 | 단점 |
-|---|---|---|
-| A. 일반 `<script>` 태그를 순서대로 나열 | 더블클릭으로 바로 실행 | 전역 이름 충돌을 피하기 위해 파일마다 이름공간 객체 필요 |
-| B. ES 모듈 + 로컬 서버 실행 | 현대적 구조, 의존성이 명확 | 실행할 때마다 로컬 서버(예: VS Code Live Server)가 필요 |
+```bash
+python -m http.server 8000
+```
 
-**Three.js 도입에 따른 추가 고려**: 최근 Three.js(r160 이후)는 ES 모듈 형태로만 배포된다.
-A 방식을 고르면 UMD 빌드가 남아 있는 옛 버전(r159 이하)을 써야 하고, B 방식이면 최신 버전을 쓸 수 있다.
+- Three.js는 ES 모듈 빌드(`three.module.js`)를 `lib/three/`에 동봉하고 `src/launch/`에서만 `import`한다.
 
-## 6. Git 사용 규칙
+## 6. Git과 GitHub 사용 규칙
 
+- 원격 저장소: https://github.com/goguggi/Space_project.git (D-47)
+- 게시: GitHub Pages, main 브랜치 루트 (D-46). main에 푸시하면 게시된 사이트가 갱신된다.
 - 개발 단계([04_roadmap.md](04_roadmap.md)) 하나가 끝날 때마다 커밋한다.
 - 커밋 메시지는 한국어로, 첫 줄에 단계 번호와 요약을 쓴다. (예: `1단계: 발사장 선택 기능 구현`)
+- 푸시는 사용자가 지시할 때만 한다.

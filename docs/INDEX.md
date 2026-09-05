@@ -17,7 +17,7 @@
 | [03_physics.md](03_physics.md) | 물리 상수, 등속 모델 공식, 가속 모델 공식, 수치 계산 주의점, 검증 기준값 |
 | [04_roadmap.md](04_roadmap.md) | 0~9단계 개발 계획, 단계별 완료 조건 |
 | [05_data_reference.md](05_data_reference.md) | 발사장 좌표, 천체 거리, 속도 기준값, 생물 수명과 출처 |
-| [06_decisions.md](06_decisions.md) | 확정된 결정(D), 물리 근거 결정(P), 미결 질문(Q) |
+| [06_decisions.md](06_decisions.md) | 확정된 결정(D-01~D-47), 물리 근거 결정(P), 미결 질문(현재 없음) |
 | [07_feature_plans.md](07_feature_plans.md) | 기능 계획 누적 기록. 새 기능을 계획할 때마다 하나씩 추가 |
 
 ## 폴더별 코드 설명 (src/, tests/)
