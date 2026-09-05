@@ -7,7 +7,7 @@
 - 플랫폼: HTML / CSS / JavaScript (3D 발사 장면에만 Three.js 사용, 그 외 외부 라이브러리 없음)
 - 언어: 화면, 주석, 문서 모두 한국어
 - 버전 관리: Git, 원격 저장소 https://github.com/goguggi/Space_project.git
-- 실행: GitHub Pages(main 브랜치 루트)로 게시. 로컬에서는 로컬 서버로 확인
+- 실행: GitHub Pages로 게시 → **https://goguggi.github.io/Space_project/** (main 푸시마다 자동 갱신). 로컬에서는 로컬 서버로 확인
 
 ## 문서 안내
 

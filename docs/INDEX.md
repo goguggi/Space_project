@@ -35,6 +35,7 @@
 | [../src/styles/README.md](../src/styles/README.md) | CSS 파일 |
 | [../tests/README.md](../tests/README.md) | 계산 검증 테스트 파일 |
 | [../tools/README.md](../tools/README.md) | 개발 보조 스크립트 (로컬 서버 실행 방법) |
+| [../.github/README.md](../.github/README.md) | GitHub Actions 설정 (Pages 자동 게시) |
 
 ## 외부 라이브러리 (lib/)
 

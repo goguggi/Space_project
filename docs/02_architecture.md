@@ -35,6 +35,9 @@ team_project/
 │       └── README.md
 ├── tools/                   # 개발 보조 스크립트 (로컬 서버)
 │   └── README.md
+├── .github/                 # GitHub Actions (Pages 자동 게시)
+│   ├── README.md
+│   └── workflows/pages.yml
 └── tests/                   # 계산 검증용 테스트
     └── README.md
 ```
@@ -85,7 +88,8 @@ powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 ## 6. Git과 GitHub 사용 규칙
 
 - 원격 저장소: https://github.com/goguggi/Space_project.git (D-47)
-- 게시: GitHub Pages, main 브랜치 루트 (D-46). main에 푸시하면 게시된 사이트가 갱신된다.
+- 게시: GitHub Pages, main 브랜치 루트 (D-46). main에 푸시하면 `.github/workflows/pages.yml`이 자동으로 게시한다. 주소: https://goguggi.github.io/Space_project/
+- 인증: Git Credential Manager가 브라우저 로그인으로 처리한다. 토큰을 파일이나 명령에 직접 쓰지 않는다.
 - 개발 단계([04_roadmap.md](04_roadmap.md)) 하나가 끝날 때마다 커밋한다.
 - 커밋 메시지는 한국어로, 첫 줄에 단계 번호와 요약을 쓴다. (예: `1단계: 발사장 선택 기능 구현`)
 - 푸시는 사용자가 지시할 때만 한다.
