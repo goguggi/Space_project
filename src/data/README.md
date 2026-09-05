@@ -30,4 +30,6 @@
 | `constants.js` | `SPEED_OF_LIGHT`, `ASTRONOMICAL_UNIT`, `LIGHT_YEAR`, `SECONDS_PER_YEAR`, `STANDARD_GRAVITY`, `EARTH_GM`, `EARTH_RADIUS` | 물리 상수. 프로젝트에서 유일한 정의 위치 |
 | `destinations.js` | `DESTINATIONS`, `DESTINATION_CATEGORIES`, `DEFAULT_DESTINATION_ID`, `findDestination(id)` | 천체 12개 (id, 구분, 이름, 거리 m, 출처). 원 자료 단위(km, AU, 광년)를 `constants.js`로 m 변환. 기본 선택은 달 |
 
-- `destinations.js`는 같은 폴더의 `constants.js`만 불러온다. (`utils/`를 쓰지 않는 이유: 이 폴더는 다른 폴더를 모른다는 규칙)
+| `rockets.js` | `SPEED_MIN`, `SPEED_MAX`, `SPEED_PRESETS`, `DEFAULT_SPEED` | 슬라이더 하한 11.2 km/s, 상한 0.99c, 프리셋 6개 (m/s) |
+
+- `destinations.js`와 `rockets.js`는 같은 폴더의 `constants.js`만 불러온다. (`utils/`를 쓰지 않는 이유: 이 폴더는 다른 폴더를 모른다는 규칙)

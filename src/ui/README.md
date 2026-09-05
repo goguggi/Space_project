@@ -35,3 +35,8 @@
 |---|---|---|
 | `launchSiteSelector.js` | `createLaunchSiteSelector(container, onChange)` | 발사장 `<select>`와 정보 목록(이름, 국가, 위도, 경도, 비고). 반환값의 `getSelected()`로 현재 선택을 읽는다 |
 | `destinationSelector.js` | `createDestinationSelector(container, onChange)` | 구분별 `<optgroup>`으로 묶은 천체 `<select>`와 정보 목록(이름, 구분, 평균 거리, km 환산, 근거) |
+| `speedSlider.js` | `createSpeedSlider(container, onChange)`, `formatSpeed(v)` | 로그 눈금 슬라이더(위치 0~1000 → v = v_min·(v_max/v_min)^(t/1000)). 반환값 `getSpeed()`, `setSpeed(v)`. 표시: "17.0 km/s (광속의 5.67e-3%)" |
+| `speedPresets.js` | `createSpeedPresets(container, onSelect)` | 프리셋 버튼 6개. 누르면 `onSelect(speed)` |
+| `lorentzDisplay.js` | `createLorentzDisplay(container)`, `formatGamma(v)` | 표시 전용(비활성) 선형 슬라이더 γ = 1 ~ 7.09와 숫자. 반환값 `update(speed)`. γ−1 < 10⁻⁴이면 지수 표기 |
+
+- `main.js`에서 로런츠 표시를 속도 슬라이더보다 먼저 만든다. 슬라이더가 생성 직후 첫 속도를 알리기 때문이다.

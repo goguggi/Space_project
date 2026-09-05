@@ -91,6 +91,54 @@ body {
   margin: 0;
 }
 
+/* 슬라이더 (3단계) */
+.field-range {
+  width: 100%;
+  margin: 6px 0 2px;
+  accent-color: var(--color-accent);
+}
+
+.field-range.readonly {
+  accent-color: var(--color-muted);
+  opacity: 0.85;
+}
+
+.range-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.readout {
+  margin: 8px 0 16px;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 프리셋 버튼 (3단계) */
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.preset-button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.preset-button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
 .app-footer {
   text-align: center;
   color: var(--color-muted);

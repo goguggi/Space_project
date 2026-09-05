@@ -24,4 +24,6 @@
 
 ## 현재 파일 목록
 
-아직 없음.
+| 파일 | 내보내는 것 | 설명 |
+|---|---|---|
+| `lorentz.js` | `beta(v)`, `gamma(v)`, `gammaMinusOne(v)`, `oneMinusInverseGamma(v)` | 입력 m/s. β < 10⁻³이면 테일러 급수, 아니면 직접 계산 (docs/03_physics.md 3.1절). 검증값: 0.99c → γ 7.0888, 11.2 km/s → γ−1 6.98×10⁻¹⁰ |
