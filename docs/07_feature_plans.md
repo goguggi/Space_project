@@ -163,3 +163,23 @@
 - [04_roadmap.md](04_roadmap.md) 16단계 추가, 11단계 입력 형식 주석
 - [06_decisions.md](06_decisions.md) D-48~D-51, Q-19~Q-23
 - [INDEX.md](INDEX.md), [../src/data/README.md](../src/data/README.md), [../src/physics/README.md](../src/physics/README.md), [../src/ui/README.md](../src/ui/README.md)
+
+---
+
+## 기능 3: 시점 전환 · 소리 · 천체 착륙 (17단계)
+
+사용자 요청: "1인칭과 3인칭(우주에 나왔을 때 다 보이게), 지구에 구글맵 추가 및 음악도 추가, KSP처럼. 천체 착륙씬과 왕복도 구현."
+
+| 항목 | 내용 | 결정 |
+|---|---|---|
+| 시점 전환 | 1인칭(조종석) / 3인칭(뒤에서 따라감) / 광역(지구·우주선·목적지를 한 화면에). 발사·항행·착륙 장면 모두 | D-58 |
+| 소리 | Web Audio로 만든 우주 앰비언트와 효과음. 장면마다 조성이 바뀐다 | D-59 |
+| 발사장 지도 | 제어 패널에 구글지도 임베드. 오프라인이면 좌표·링크로 대체 | D-60 |
+| 천체 착륙 | 달·화성은 지표 착륙 연출(감속 하강 → 최종 접근 → 접지). 나머지는 근접 통과 | D-61 |
+| 왕복 | 진행률 0.5가 반환점. 착륙/근접 후 이륙해 지구로 귀환 | D-62 |
+
+**만든 파일**: `src/audio/spaceAudio.js`, `src/ui/viewControls.js`, `src/ui/launchSiteMap.js`,
+`src/launch/landingScene.js`, `src/launch/landingHud.js`, `physics/landingGuidance.js`의 `descentProfile`,
+`data/celestialBodies.js`의 `landable`·`surfaceGravity`·`isLandable`.
+
+**남은 것**: 착륙 지점 선택(지금은 임의의 평지), 이륙 연출(지금은 즉시 전환), 지구 재진입 연출.

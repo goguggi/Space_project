@@ -120,11 +120,42 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     }
   }
 
+  // ---- 시점 모드 (17단계, D-58) ----
+  // first 로켓 꼭대기에서 진행 방향을 본다 · third 뒤에서 따라간다 · wide 멀리서 지구 곡률까지
+  let viewMode = 'third';
+  const firstPersonLook = new THREE.Vector3();
+
+  function setCameraMode(id) {
+    viewMode = id === 'first' || id === 'wide' ? id : 'third';
+    scene.controls.enabled = viewMode !== 'first';
+    if (viewMode === 'third') {
+      scene.camera.fov = 50;
+      follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));
+    } else if (viewMode === 'wide') {
+      scene.camera.fov = 55;
+      follow.setTarget(rocket.root, new THREE.Vector3(95, 48, 165));
+    } else {
+      scene.camera.fov = 78;
+      follow.setTarget(null);
+    }
+    scene.camera.updateProjectionMatrix();
+  }
+
+  /** 1인칭: 로켓 꼭대기에 카메라를 두고 추력 방향을 본다 */
+  function updateFirstPerson() {
+    const { r, dir } = timeline.sim.vehicle;
+    const [x, y, z] = toScene(r);
+    scene.camera.position.set(x + dir.x * rocket.heightUnits * 0.62, y + dir.y * rocket.heightUnits * 0.62, z + 0.8);
+    firstPersonLook.set(x + dir.x * 4000, y + dir.y * 4000, z);
+    scene.camera.up.set(dir.x, dir.y, 0);
+    scene.camera.lookAt(firstPersonLook);
+  }
+
   scene.onFrame((dt) => {
     const events = timeline.update(dt);
     handleEvents(events);
     placeRocket();
-    follow.update();
+    if (viewMode === 'first') updateFirstPerson(); else follow.update();
     refreshViews();
     if (events.some((e) => e.type === 'complete')) handlers.onComplete?.(events);
   });
@@ -139,6 +170,8 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
   return {
     launch() { timeline.start(); },
     skip,
+    setCameraMode,
+    get cameraMode() { return viewMode; },
     /** 항행 화면으로 넘어갈 때 발사 계기판을 숨긴다 (15단계) */
     setHudVisible(on) { hudContainer.style.display = on ? '' : 'none'; },
     reset() {
@@ -150,7 +183,7 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       rocket.reassemble();
       pip.clear();
       placeRocket();
-      follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));
+      setCameraMode(viewMode);
       refreshViews();
     },
     get timeline() { return timeline; },

@@ -161,3 +161,26 @@ export function guideBody(body, h) {
   const thrust = Math.hypot(aUp, aEast) * body.mass;
   return { ax, ay, thrust, landed };
 }
+
+/**
+ * 천체 표면 착륙의 강하 프로파일 (17단계, D-61).
+ * 일정한 감속도로 내려와 접지 속도가 `touchdown`이 되도록 한 간단한 모형이다.
+ *   고도 h(t) = h₀·(1 − t)²   (t = 0 시작, t = 1 접지)
+ *   하강 속도 v(t) = −dh/dt · (1/T) = 2·h₀·(1 − t) / T   → 접지에서 0에 가까워진다
+ * 실제 하강 시간 T는 화면 재생 시간이 아니라 "그 천체에서 h₀만큼 자유낙하했을 때 걸릴 시간"을 쓴다.
+ *   자유낙하 시간 = √(2h₀/g). 중력이 약한 달은 느긋하게, 화성은 조금 빠르게 내려온다.
+ * @param {number} t          0(시작) ~ 1(접지)
+ * @param {number} startAltitude  시작 고도 (m)
+ * @param {number} gravity    그 천체의 표면 중력 (m/s²)
+ * @param {number} touchdown  접지 속도 (m/s)
+ * @returns {{ altitude: number, speed: number, thrust: number, seconds: number, duration: number }}
+ */
+export function descentProfile(t, startAltitude, gravity, touchdown = 1.5) {
+  const p = Math.max(0, Math.min(t, 1));
+  const duration = Math.sqrt((2 * startAltitude) / Math.max(gravity, 0.01));
+  const altitude = startAltitude * (1 - p) ** 2;
+  const speed = (2 * startAltitude * (1 - p)) / duration + touchdown * p;
+  // 추력: 감속에 필요한 몫. 자유낙하보다 느리게 내려오려면 계속 태워야 한다 (0~1로 정규화)
+  const thrust = p >= 1 ? 0 : Math.min(0.35 + 0.65 * p, 1);
+  return { altitude, speed: p >= 1 ? touchdown : speed, thrust, seconds: duration * p, duration };
+}

@@ -22,12 +22,14 @@ export const CELESTIAL_BODIES = {
   moon: {
     name: '달', kind: 'moon', radiusM: 1_737.4 * KM,
     color: 0xb9b6ad, glow: 0,
-    source: 'NASA 팩트시트, 평균 반지름 1,737.4 km',
+    landable: true, surfaceGravity: 1.62,   // NASA 팩트시트
+    source: 'NASA 팩트시트, 평균 반지름 1,737.4 km / 표면 중력 1.62 m/s²',
   },
   mars: {
     name: '화성', kind: 'planet', radiusM: 3_389.5 * KM,
     color: 0xc1552e, atmosphere: 0xd9a07a, glow: 0,
-    source: 'NASA 팩트시트, 평균 반지름 3,389.5 km',
+    landable: true, surfaceGravity: 3.72,   // NASA 팩트시트
+    source: 'NASA 팩트시트, 평균 반지름 3,389.5 km / 표면 중력 3.72 m/s²',
   },
   jupiter: {
     name: '목성', kind: 'planet', radiusM: 69_911 * KM,
@@ -101,6 +103,15 @@ export function getBodyVisual(id) {
   return CELESTIAL_BODIES[id] ?? {
     name: '목적지', kind: 'planet', radiusM: 6_371 * KM, color: 0x8a8f9c, glow: 0,
   };
+}
+
+/**
+ * 고체 표면이 있어 착륙 장면을 만들 수 있는 천체인가 (D-61).
+ * 가스행성·항성·성운·은하는 내려앉을 표면이 없으므로 근접 통과로 처리한다.
+ * @param {object} visual
+ */
+export function isLandable(visual) {
+  return Boolean(visual?.landable);
 }
 
 /**

@@ -9,6 +9,8 @@ import { createLaunchSimulation } from '../src/physics/launchDynamics.js';
 import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
 import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.js';
 import { journeyAt, angularRadius, dopplerFactor, aberratedAngle, beta } from '../src/physics/journey.js';
+import { descentProfile } from '../src/physics/landingGuidance.js';
+import { CELESTIAL_BODIES, isLandable } from '../src/data/celestialBodies.js';
 import { STANDARD_GRAVITY, EARTH_RADIUS } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
@@ -146,6 +148,27 @@ cases.push(['광행차: 뒤쪽(180°)은 그대로 뒤쪽 (rad)', Math.PI, aberr
 cases.push(['광행차: 항상 앞으로 몰린다 (θ′ < θ, 1 = 그렇다)', 1, aberratedAngle(2, 0.9) < 2 ? 1 : 0, 1e-9]);
 
 cases.push(['β = v/c (0.99c)', 0.99, beta(0.99 * c), 1e-12]);
+
+// ---- 천체 착륙 (17단계, D-61) ----
+// 달 표면 중력 1.62 m/s²에서 2,000 m 자유낙하 시간 = √(2·2000/1.62) ≈ 49.7초
+const moonG = CELESTIAL_BODIES.moon.surfaceGravity;
+const dStart = descentProfile(0, 2000, moonG);
+const dMid = descentProfile(0.5, 2000, moonG);
+const dEnd = descentProfile(1, 2000, moonG);
+cases.push(['착륙: 시작 고도 (m)', 2000, dStart.altitude, 1e-12]);
+cases.push(['착륙: 하강 시간 = √(2h/g) (s)', Math.sqrt((2 * 2000) / moonG), dStart.duration, 1e-12]);
+cases.push(['착륙: 절반 시점 고도 = h₀/4 (m)', 500, dMid.altitude, 1e-12]);
+cases.push(['착륙: 접지 고도 = 0 (m, 1 = 그렇다)', 1, dEnd.altitude < 1e-9 ? 1 : 0, 1e-9]);
+cases.push(['착륙: 접지 속도 = 1.5 m/s', 1.5, dEnd.speed, 1e-12]);
+cases.push(['착륙: 속도는 계속 줄어든다 (1 = 그렇다)', 1, dStart.speed > dMid.speed && dMid.speed > dEnd.speed ? 1 : 0, 1e-9]);
+cases.push(['착륙 가능: 달 (1 = 그렇다)', 1, isLandable(CELESTIAL_BODIES.moon) ? 1 : 0, 1e-9]);
+cases.push(['착륙 가능: 화성 (1 = 그렇다)', 1, isLandable(CELESTIAL_BODIES.mars) ? 1 : 0, 1e-9]);
+cases.push(['착륙 불가: 목성 (가스행성, 1 = 그렇다)', 1, isLandable(CELESTIAL_BODIES.jupiter) ? 0 : 1, 1e-9]);
+cases.push(['착륙 불가: 태양 (항성, 1 = 그렇다)', 1, isLandable(CELESTIAL_BODIES.sun) ? 0 : 1, 1e-9]);
+cases.push(['착륙 불가: 안드로메다 (은하, 1 = 그렇다)', 1, isLandable(CELESTIAL_BODIES.andromeda) ? 0 : 1, 1e-9]);
+// 화성은 중력이 커서 같은 높이를 더 빨리 내려온다
+cases.push(['착륙: 화성 하강 시간 < 달 (1 = 그렇다)', 1,
+  descentProfile(0, 2000, CELESTIAL_BODIES.mars.surfaceGravity).duration < dStart.duration ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');

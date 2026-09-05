@@ -11,7 +11,8 @@
 | [physics/](physics/README.md) | 계산 로직 (순수 함수) | data | 화면(DOM) |
 | [utils/](utils/README.md) | 단위 변환, 숫자 서식 | data | 화면(DOM) |
 | [ui/](ui/README.md) | 화면 구성 요소 | data, physics, utils | 없음 |
-| [launch/](launch/README.md) | 3D 발사 장면 (Three.js) | data, physics, utils, lib/three | 없음 |
+| [launch/](launch/README.md) | 3D 장면 (발사·항행·착륙, Three.js) | data, physics, utils, lib/three | 없음 |
+| [audio/](audio/README.md) | 배경 음악과 효과음 (Web Audio, 파일 없음) | 없음 | 계산, 화면 |
 | [styles/](styles/README.md) | CSS | 없음 | 없음 |
 
 ## 의존 방향
@@ -23,6 +24,7 @@ ui  →  styles
 launch  →  physics  →  data
 launch  →  lib/three
 ui  →  launch   (발사 버튼이 장면을 시작시킴)
+main.js  →  audio   (장면이 바뀔 때 분위기와 효과음을 알림)
 ```
 
 Three.js는 `launch/` 안의 파일에서만 불러온다.

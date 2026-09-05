@@ -743,3 +743,122 @@ a { color: var(--color-accent); }
   .pip-view { width: 40%; bottom: calc(var(--bar-height) + 120px); }
   .cruise-hud { width: min(300px, 60%); }
 }
+
+/* ── ⑨ 시점 전환·소리 버튼과 발사장 지도 (17단계) ─────────────────── */
+
+.view-controls {
+  position: absolute;
+  top: 14px;
+  right: 60px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 6;
+  pointer-events: auto;
+}
+
+.view-group {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: rgba(4, 7, 16, 0.62);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+
+.view-button {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.view-button:hover { background: rgba(111, 168, 255, 0.16); }
+
+.view-button.active {
+  background: var(--color-accent);
+  color: #06101f;
+  font-weight: 700;
+}
+
+.sound-button {
+  padding: 6px 12px;
+  background: rgba(4, 7, 16, 0.62);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+
+/* 발사장 구글지도 (D-60) */
+.site-map { margin-top: 12px; }
+
+.site-map-frame {
+  position: relative;
+  height: 190px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: rgba(8, 12, 24, 0.85);
+}
+
+.site-map-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  filter: saturate(0.85) brightness(0.92);
+}
+
+.site-map-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  background: rgba(8, 12, 24, 0.9);
+}
+
+.site-map-fallback[hidden] { display: none; }
+
+.site-map-note { margin: 6px 0 0; color: var(--color-muted); font-size: 0.74rem; }
+
+/* 착륙 계기판 */
+.landing-hud {
+  position: absolute;
+  left: 16px;
+  top: 66px;
+  width: min(300px, 42%);
+  padding: 12px 14px;
+  background: rgba(4, 7, 16, 0.58);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+  font-variant-numeric: tabular-nums;
+}
+
+.landing-hud h3 { margin: 0 0 8px; font-size: 1rem; }
+.landing-hud .landing-phase { color: var(--color-accent); font-size: 0.76rem; font-weight: 700; }
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+.landing-grid span { display: block; color: var(--color-muted); font-size: 0.7rem; }
+.landing-grid b { font-weight: 600; }
+
+@media (max-width: 900px) {
+  .view-controls { right: 14px; top: 56px; flex-wrap: wrap; justify-content: flex-end; }
+}

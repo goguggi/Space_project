@@ -394,6 +394,89 @@ export function createCruiseScene(container) {
     marker.lookAt(camera.position);
   }
 
+  // ---- 광역 시점에서 보여 줄 항로 (지구 ── 우주선 ── 목적지) ----
+  const routeLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, -VIEW_DISTANCE), new THREE.Vector3(0, 0, VIEW_DISTANCE),
+    ]),
+    new THREE.LineDashedMaterial({ color: 0x6fa8ff, dashSize: 26, gapSize: 20, transparent: true, opacity: 0.5 }),
+  );
+  routeLine.computeLineDistances();
+  routeLine.visible = false;
+  scene.add(routeLine);
+
+  // ---- 시점 모드 (17단계, D-58) ----
+  // first 조종석 · third 우주선 뒤 · wide 지구·우주선·목적지를 한 화면에
+  let viewMode = 'third';
+  let lastFraction = 0.5;
+  let lastJourney = null;   // 시점을 바꿀 때 천체 크기를 다시 잡기 위해 마지막 상태를 기억한다
+
+  function setCameraMode(id) {
+    viewMode = id === 'first' || id === 'wide' ? id : 'third';
+    if (viewMode === 'first') {
+      camera.fov = 74;
+      camera.position.set(0, 0, 18);
+      controls.target.set(0, 0, 600);
+      controls.minDistance = 4;
+      controls.maxDistance = 1_200;
+      ship.visible = false;
+      routeLine.visible = false;
+    } else if (viewMode === 'wide') {
+      camera.fov = 52;
+      camera.position.set(-2_600, 780, 0);   // 목적지(+Z)가 화면 오른쪽에 오도록 반대편에서 본다
+      controls.target.set(0, 0, 0);
+      controls.minDistance = 600;
+      controls.maxDistance = 9_000;
+      ship.visible = true;
+      routeLine.visible = true;
+    } else {
+      camera.fov = 55;
+      camera.position.set(0, 3, -26);
+      controls.target.set(0, 0, 40);
+      controls.minDistance = 8;
+      controls.maxDistance = 400;
+      ship.visible = true;
+      routeLine.visible = false;
+    }
+    camera.updateProjectionMatrix();
+    controls.update();
+    applyLayout();
+    refreshBodies();
+  }
+
+  /** 시점에 맞춰 우주선과 천체의 자리·크기를 다시 잡는다 */
+  function applyLayout() {
+    if (viewMode === 'wide') {
+      // 지도처럼 본다: 지구와 목적지를 양 끝에 같은 크기로 두고, 우주선을 진행률 위치에 놓는다
+      ship.scale.setScalar(70);
+      ship.position.set(0, 0, -VIEW_DISTANCE + 2 * VIEW_DISTANCE * lastFraction);
+      for (const [model, z] of [[earthModel, -VIEW_DISTANCE], [targetModel, VIEW_DISTANCE]]) {
+        if (!model) continue;
+        model.visible = true;
+        model.scale.setScalar(120);
+        model.position.z = z;
+      }
+    } else {
+      ship.scale.setScalar(0.55);
+      ship.position.set(3.4, -3.2, 10);
+    }
+  }
+
+  /** 마지막 진행 상태로 천체 크기·표식을 다시 잡는다 (시점을 바꿔도 겉보기 크기가 맞도록) */
+  function refreshBodies() {
+    if (viewMode === 'wide') {
+      earthMarker.visible = false;
+      targetMarker.visible = false;
+      applyLayout();
+      return;
+    }
+    if (earthModel) earthModel.position.z = -VIEW_DISTANCE;
+    if (targetModel) targetModel.position.z = VIEW_DISTANCE;
+    if (!lastJourney) return;
+    placeMarker(earthMarker, placeBody(earthModel, earthVisual, lastJourney.fromEarth));
+    placeMarker(targetMarker, placeBody(targetModel, targetVisual, lastJourney.toTarget));
+  }
+
   // ---- 프레임 루프 ----
   let running = false;
   let spin = 0;
@@ -415,7 +498,7 @@ export function createCruiseScene(container) {
     spin += 0.0016;
     if (targetModel) targetModel.rotation.y = spin;
     if (earthModel) earthModel.rotation.y = -spin * 0.7;
-    ship.position.y = -3.2 + Math.sin(spin * 12) * 0.06;
+    if (viewMode !== 'wide') ship.position.y = -3.2 + Math.sin(spin * 12) * 0.06;
     for (const fn of frameCallbacks) fn();
     controls.update();
     renderer.render(scene, camera);
@@ -428,6 +511,7 @@ export function createCruiseScene(container) {
       setBody('earth', earth);
       setBody('target', target);
       currentBeta = -1;   // 별도 다시 계산하게 한다
+      applyLayout();
     },
     /**
      * 진행 상태를 반영한다.
@@ -435,13 +519,17 @@ export function createCruiseScene(container) {
      * @param {number} betaValue  v / c
      */
     setProgress(journey, betaValue) {
-      placeMarker(earthMarker, placeBody(earthModel, earthVisual, journey.fromEarth));
-      placeMarker(targetMarker, placeBody(targetModel, targetVisual, journey.toTarget));
+      lastJourney = journey;
+      const span = journey.fromEarth + journey.toTarget;
+      lastFraction = span > 0 ? Math.min(Math.max(journey.fromEarth / span, 0), 1) : 0;
+      refreshBodies();
       updateStars(betaValue);
       const flame = ship.userData.flame;
       if (flame) flame.material.opacity = 0.35 + Math.min(betaValue * 3, 0.55);
     },
     onFrame(fn) { frameCallbacks.push(fn); },
+    setCameraMode,
+    get cameraMode() { return viewMode; },
     show() {
       renderer.domElement.style.display = 'block';
       resize();

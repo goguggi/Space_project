@@ -14,10 +14,12 @@
     <section class="stage" id="stage">
       <div id="launch-scene" class="scene-layer"></div>
       <div id="cruise-scene" class="scene-layer"></div>
+      <div id="landing-scene" class="scene-layer"></div>
 
       <!-- 계기판 겹침 층 (마우스 이벤트는 통과시키고, 버튼만 받는다) -->
       <div id="launch-hud" class="hud-layer"></div>
       <div id="cruise-hud" class="hud-layer"></div>
+      <div id="view-controls" class="hud-layer"></div>
 
       <header class="stage-top">
         <h1>우주여행 시간 지연 계산기</h1>
@@ -36,6 +38,7 @@
         <section class="card">
           <h2><span class="card-index">01</span> 발사장</h2>
           <div id="launch-site-selector"></div>
+          <div id="launch-site-map"></div>
         </section>
 
         <section class="card">
@@ -73,7 +76,7 @@
         </section>
 
         <footer class="panel-footer">
-          <p>15단계 · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
+          <p>17단계 · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
         </footer>
       </div>
     </aside>
