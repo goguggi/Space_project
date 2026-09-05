@@ -8,7 +8,7 @@
 - 계산은 직접 하지 않고 `physics/`의 함수를 호출한다.
 - 숫자 서식과 단위 변환은 `utils/`의 함수를 호출한다.
 - 화면 문자열은 모두 한국어로 쓴다.
-- 구성 요소 사이의 값 전달 방식은 1단계 구현 시 정하고 이 문서에 기록한다.
+- 구성 요소는 `create○○(container, onChange)` 함수로 만들고, 값이 바뀌면 `onChange`로 알린다. (자세한 내용은 [../README.md](../README.md))
 
 ## 예정 파일
 
@@ -31,4 +31,6 @@
 
 ## 현재 파일 목록
 
-아직 없음.
+| 파일 | 내보내는 것 | 설명 |
+|---|---|---|
+| `launchSiteSelector.js` | `createLaunchSiteSelector(container, onChange)` | 발사장 `<select>`와 정보 목록(이름, 국가, 위도, 경도, 비고). 반환값의 `getSelected()`로 현재 선택을 읽는다 |

@@ -34,6 +34,7 @@
 | [../src/utils/README.md](../src/utils/README.md) | 단위 변환, 서식 등 공통 도우미 파일 |
 | [../src/styles/README.md](../src/styles/README.md) | CSS 파일 |
 | [../tests/README.md](../tests/README.md) | 계산 검증 테스트 파일 |
+| [../tools/README.md](../tools/README.md) | 개발 보조 스크립트 (로컬 서버 실행 방법) |
 
 ## 외부 라이브러리 (lib/)
 

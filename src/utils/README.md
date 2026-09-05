@@ -16,4 +16,6 @@
 
 ## 현재 파일 목록
 
-아직 없음.
+| 파일 | 내보내는 것 | 설명 |
+|---|---|---|
+| `formatCoordinate.js` | `formatLatitude(deg)`, `formatLongitude(deg)` | 도 단위 실수를 "34.43° N", "80.60° W" 형태로 서식 (1단계) |

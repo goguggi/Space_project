@@ -33,6 +33,8 @@ team_project/
 │   │   └── README.md
 │   └── styles/              # CSS
 │       └── README.md
+├── tools/                   # 개발 보조 스크립트 (로컬 서버)
+│   └── README.md
 └── tests/                   # 계산 검증용 테스트
     └── README.md
 ```
@@ -69,11 +71,14 @@ team_project/
 - 모든 소스 파일은 **ES 모듈**(`import` / `export`)로 작성한다.
 - 프로그램은 **GitHub Pages**(main 브랜치 루트)로 게시하며, 웹 서버를 통해 열리므로 ES 모듈과 최신 Three.js가 그대로 동작한다.
 - 로컬에서 확인할 때는 `index.html`을 더블클릭하지 말고 로컬 서버로 연다. (file:// 프로토콜에서는 ES 모듈이 브라우저 보안 정책에 막힌다.)
-  예: VS Code의 Live Server 확장, 또는 아래 명령 후 `http://localhost:8000` 접속
+  이 프로젝트에는 Python이나 Node 없이 쓸 수 있는 PowerShell 서버가 들어 있다. 저장소 최상위에서 실행한 뒤 `http://localhost:8000` 접속.
 
 ```bash
-python -m http.server 8000
+powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 ```
+
+  VS Code의 Live Server 확장을 써도 된다.
+- PowerShell 스크립트(`.ps1`)에 한글이 들어가면 **UTF-8 BOM**으로 저장해야 한다. BOM이 없으면 Windows PowerShell 5.1이 구문 오류를 낸다.
 
 - Three.js는 ES 모듈 빌드(`three.module.js`)를 `lib/three/`에 동봉하고 `src/launch/`에서만 `import`한다.
 

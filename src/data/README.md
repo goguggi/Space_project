@@ -24,4 +24,6 @@
 
 ## 현재 파일 목록
 
-아직 없음.
+| 파일 | 내보내는 것 | 설명 |
+|---|---|---|
+| `launchSites.js` | `LAUNCH_SITES`, `DEFAULT_LAUNCH_SITE_ID`, `findLaunchSite(id)` | 발사장 5곳 (id, 이름, 국가, 위도, 경도, 비고). 기본 선택은 나로우주센터 |
