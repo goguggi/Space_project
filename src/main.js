@@ -13,6 +13,7 @@ import { createStopwatch } from './ui/stopwatch.js';
 import { createDepartureAgeInput } from './ui/departureAgeInput.js';
 import { createLifespanChart } from './ui/lifespanChart.js';
 import { createSurvivalIcons } from './ui/survivalIcons.js';
+import { createLaunchButton } from './ui/launchButton.js';
 import { computeTimeDilation, TRIP_TYPES } from './physics/timeDilation.js';
 import { judgeAll } from './physics/survival.js';
 import { ORGANISMS } from './data/organisms.js';
@@ -113,13 +114,36 @@ createTripTypeSelector(
   },
 );
 
-// 10단계: 3D 발사 장면. Three.js는 launch/ 안에서만 불러온다.
+// 10~11단계: 3D 발사 장면과 로켓 발사. Three.js는 launch/ 안에서만 불러온다.
 // 동적 import를 써서 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 한다.
-import('./launch/launchScene.js')
-  .then(({ createLaunchScene }) => {
-    const scene = createLaunchScene(document.getElementById('launch-scene'));
-    scene.start();
-    state.launchScene = scene;
+const launchButton = createLaunchButton(document.getElementById('launch-button-container'), {
+  onLaunch: () => {
+    if (!state.launch) return;
+    state.launch.launch();
+    launchButton.setState('flying');
+  },
+  onReset: () => {
+    if (!state.launch) return;
+    state.launch.reset();
+    launchButton.setState('ready');
+  },
+});
+
+Promise.all([import('./launch/launchController.js'), import('./data/falconHeavy.js')])
+  .then(([{ createLaunchController }, { FALCON_HEAVY }]) => {
+    state.rocketSpec = FALCON_HEAVY;   // 16단계에서 설계 로켓 JSON으로 바뀐다
+    state.launch = createLaunchController(
+      document.getElementById('launch-scene'),
+      document.getElementById('launch-hud'),
+      state.rocketSpec,
+      {
+        onComplete: () => {
+          launchButton.setState('done');
+          // 15단계: 여기서 우주선 출발 연출과 스톱워치 재시작이 붙는다
+        },
+      },
+    );
+    launchButton.setState('ready');
   })
   .catch((error) => {
     const box = document.getElementById('launch-scene');

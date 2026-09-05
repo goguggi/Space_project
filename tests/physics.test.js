@@ -5,6 +5,9 @@
 import { SPEED_OF_LIGHT, LIGHT_YEAR, SECONDS_PER_YEAR } from '../src/data/constants.js';
 import { gamma, gammaMinusOne } from '../src/physics/lorentz.js';
 import { computeTimeDilation, TRIP_TYPES } from '../src/physics/timeDilation.js';
+import { createLaunchSimulation } from '../src/physics/launchDynamics.js';
+import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
+import { STANDARD_GRAVITY } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
 
@@ -35,6 +38,35 @@ cases.push(['달 왕복 차이 = 편도 × 2', moon.difference * 2, moonRound.di
 
 // 정밀도: 낮은 속도에서 직접 빼기와 급수 계산의 차이가 작아야 한다 (자릿수 유지 확인)
 cases.push(['차이 정밀 계산 vs 직접 빼기 (11.2 km/s, 달)', moon.earthTime - moon.shipTime, moon.difference, 1e-3]);
+
+// ---- 발사 물리 (11단계) ----
+// 치올콥스키 검증: 중력을 끄고 1단 로켓을 태우면 Δv = Isp·g₀·ln(m₀/m_f) 와 같아야 한다 (docs/03_physics.md 6.4절)
+const singleStage = {
+  payloadMassKg: 1_000,
+  stages: [{
+    id: 's1', label: '1단', role: 'serial', separationOrder: 1,
+    dryMassKg: 9_000, propellantMassKg: 90_000,
+    // 해수면 추력 = 진공 추력 으로 두어 고도 보간의 영향을 없앤다
+    engines: { count: 1, thrustSeaLevelN: 1_500_000, thrustVacuumN: 1_500_000, ispSeaLevelS: 300, ispVacuumS: 300 },
+    recovery: { enabled: false },
+  }],
+};
+const noGravity = createLaunchSimulation(singleStage, { gravity: false, pitchProgram: () => 0, stepSeconds: 1 / 60 });
+while (!noGravity.isComplete()) noGravity.step(1);
+const expectedDeltaV = 300 * STANDARD_GRAVITY * Math.log(100_000 / 10_000);
+cases.push(['치올콥스키 Δv (중력 없음, 1단)', expectedDeltaV, noGravity.getSpeed(), 2e-3]);
+
+// 팔콘 헤비 기본 피치 프로그램: 분리 시점이 실제 기록과 같은 자릿수이고, 2단 연소 종료 시 궤도 이상에 도달해야 한다 (6.7절)
+const fh = createLaunchSimulation(FALCON_HEAVY, { stepSeconds: 1 / 20 });
+const fhEvents = [];
+while (!fh.isComplete() && fh.getTime() < 1200) fhEvents.push(...fh.step(1));
+const boosterSep = fhEvents.find((e) => e.type === 'separation' && e.stageId === 'booster-left');
+const coreSep = fhEvents.find((e) => e.type === 'separation' && e.stageId === 'core');
+cases.push(['팔콘 헤비 부스터 분리 시각 (s, 실제 약 150)', 150, boosterSep ? boosterSep.time : 0, 0.15]);
+cases.push(['팔콘 헤비 코어 분리 시각 (s, 실제 약 185)', 185, coreSep ? coreSep.time : 0, 0.15]);
+cases.push(['팔콘 헤비 2단 종료 고도 ≥ 200 km (km)', 200, Math.min(fh.getAltitude() / 1000, 200), 1e-6]);
+cases.push(['팔콘 헤비 2단 종료 속도 ≥ 7.8 km/s (km/s)', 7.8, Math.min(fh.getSpeed() / 1000, 7.8), 1e-6]);
+cases.push(['팔콘 헤비 추락 없음 (1 = 정상)', 1, fhEvents.some((e) => e.type === 'crash') ? 0 : 1, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');

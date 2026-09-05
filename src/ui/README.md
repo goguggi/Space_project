@@ -43,6 +43,7 @@
 | `stopwatch.js` | `createStopwatch(container)`, `animationDurationMs(s)`, `formatStopwatch(s)` | 지구/우주선 스톱워치 2개. `start(result)`로 0부터 결과값까지 재생, 길이는 지구 시간의 log10에 비례해 3~15초. 두 시계가 같은 시간 동안 움직여 우주선 시계가 느리게 보임 (6단계) |
 | `departureAgeInput.js` | `createDepartureAgeInput(container, onChange)` | 생물별 출발 나이 숫자 입력(기본 0). 콜백에는 id → 초 로 변환해 넘김 (7단계) |
 | `lifespanChart.js` | `createLifespanChart(container)` | 로그 눈금 div 막대. 행마다 수명(회색), 출발 전 기간(갈색), 지구 시간(파랑), 우주선 시간(초록)을 겹쳐 그림. 하한 1시간. `update(result, ages)` (7단계) |
+| `launchButton.js` | `createLaunchButton(container, {onLaunch, onReset})` | "🚀 발사"와 "처음으로" 버튼. `setState('ready'|'flying'|'done')` (11단계) |
 | `survivalIcons.js` | `createSurvivalIcons(container)` | 생물별 "우주선에 탔다면 / 지구에 남았다면" 생존·사망 아이콘과 남은 수명. `update(judgements)` (7단계) |
 
 - `main.js`의 `renderLifespan()`은 출발 나이만 바뀌었을 때 시간 지연을 다시 계산하지 않고 7단계 표시만 갱신한다.

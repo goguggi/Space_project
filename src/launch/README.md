@@ -24,13 +24,20 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 ## 축척 (D-39)
 
 - 화면 단위 1 = 실제 10 m (`SCENE_METERS_PER_UNIT`). 로켓 높이 약 70 m → 화면 7 단위.
-- 지구는 실제 반지름(6,371 km) 대신 화면 6,000 단위(`EARTH_DISPLAY_RADIUS`)의 구로 그린다. 지구 중심을 y = −6,000에 두어 발사대 바닥(지표면)이 y = 0이다.
+- 지구도 같은 비율(반지름 637,100 단위, `EARTH_DISPLAY_RADIUS`)로 그린다. 지구 중심을 y = −637,100에 두어 발사대 바닥(지표면)이 y = 0이다.
+  그래서 물리 좌표(지구 중심 원점, 발사장 (0, R))를 `(x / 10, (y − R) / 10, 0)`으로 나누기만 하면 화면 좌표가 된다.
+- 가까운 로켓(수 단위)과 먼 지구(수십만 단위)를 함께 그리기 위해 렌더러에 로그 깊이 버퍼를 켠다.
 - 물리 계산(11단계~)은 실제 m 값으로 하고, 화면에 놓을 때만 이 축척으로 바꾼다.
 
 ## 현재 파일 목록
 
 | 파일 | 내보내는 것 | 설명 |
 |---|---|---|
-| `launchScene.js` | `createLaunchScene(container)`, `SCENE_METERS_PER_UNIT`, `EARTH_DISPLAY_RADIUS` | 렌더러, 장면, 카메라, 지구(구)와 옅은 대기, 발사대(받침과 탑), 태양광·반구광, 별 배경, OrbitControls(10단계 임시 카메라). 반환값: `start()`, `stop()`, `onFrame(fn)`(매 프레임 dt초를 넘겨 호출), `scene`, `camera`, `surfaceY` 등 |
+| `launchScene.js` | `createLaunchScene(container)`, `SCENE_METERS_PER_UNIT`, `EARTH_DISPLAY_RADIUS` | 렌더러(로그 깊이), 장면, 카메라, 지구(구)와 옅은 대기, 발사대(받침과 탑), 태양광·반구광, 별 배경, OrbitControls. 반환값: `start()`, `stop()`, `onFrame(fn)`(매 프레임 dt초), `scene`, `camera`, `controls`, `surfaceY`. 탭이 숨겨지면 setTimeout으로 시뮬레이션만 계속 돌린다 (10단계) |
+| `rocketModel.js` | `createRocketModel(spec)` | 제원의 `geometry.parts[]`로 단별 그룹(`stageGroups`)과 화염(`flames`)을 만든다. `update(sim)`이 연소 중인 단의 화염만 보이게 하고 흔들림을 준다 (11단계) |
+| `followCamera.js` | `createFollowCamera(camera, controls)` | 대상이 움직인 만큼 카메라를 같이 옮기고 OrbitControls 중심을 대상에 둔다. 사용자가 돌린 시점 각도가 유지된다. `setTarget(obj, offset)`, `update()` (11단계) |
+| `launchTimeline.js` | `createLaunchTimeline(spec)`, `TIME_SCALES` | 시뮬레이션 시계와 배속(1·2·5·10배), 사건 기록, 단계 이름. `start()`, `pause()`, `reset()`, `skip()`(남은 과정 즉시 계산), `update(dtReal)` (11단계) |
+| `launchHud.js` | `createLaunchHud(container, {onTimeScale, onSkip})` | T+ 시계, 단계 이름, 고도·속도·질량, 배속 버튼, 건너뛰기. `update(timeline)` (11단계 기본형, 14단계 확장) |
+| `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계) |
 
-- `main.js`는 이 모듈을 동적 `import()`로 불러온다. 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 하기 위함이다.
+- `main.js`는 `launchController.js`를 동적 `import()`로 불러온다. 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 하기 위함이다.

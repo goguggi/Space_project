@@ -28,4 +28,5 @@
 |---|---|---|
 | `lorentz.js` | `beta(v)`, `gamma(v)`, `gammaMinusOne(v)`, `oneMinusInverseGamma(v)` | 입력 m/s. β < 10⁻³이면 테일러 급수, 아니면 직접 계산 (docs/03_physics.md 3.1절). 검증값: 0.99c → γ 7.0888, 11.2 km/s → γ−1 6.98×10⁻¹⁰ |
 | `timeDilation.js` | `computeTimeDilation({distance, speed, tripType})`, `TRIP_TYPES` | 등속 모델. 입력 m, m/s. 출력 `{earthTime, shipTime, difference, gamma, totalDistance}` (초, m). 왕복은 거리 2배. `difference`는 t_지구 × (1 − 1/γ)로 정밀 계산 |
+| `launchDynamics.js` | `createLaunchSimulation(spec, {pitchProgram, gravity, stepSeconds})`, `defaultPitchProgram(t)` | 발사 운동 적분 (docs/03_physics.md 6절). 지구 중심 2차원 좌표, 반음해 오일러 1/60초. 단 목록(`stages[]` 형식)을 받아 점화·분리를 자동 처리하고 사건(`ignition`/`separation`/`complete`/`crash`)을 돌려준다. 추력은 고도에 따라 해수면↔진공 값을 지수 보간. 기본 피치: 10초 수직, 200초 동안 85°까지 (P-05). `gravity:false`는 치올콥스키 검증용 (11단계) |
 | `survival.js` | `judgeSurvival(organism, departureAge, elapsed)`, `judgeAll(organisms, ages, result)` | 생존 판정: 출발 나이 + 경과 시간 < 수명 (D-33). `judgeAll`은 생물마다 우주선 탑승(`onShip`)과 지구 잔류(`onEarth`) 두 경우를 돌려준다 |

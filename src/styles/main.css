@@ -384,13 +384,93 @@ body {
 .survival-table small { color: var(--color-muted); }
 
 /* 3D 발사 장면 (10단계) */
+.launch-frame {
+  position: relative;
+}
+
 .launch-scene {
   width: 100%;
-  height: 480px;
+  height: 520px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+/* 발사 HUD (11단계) */
+.launch-hud {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  right: 12px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.launch-hud .hud-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.launch-hud .hud-clock {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.launch-hud .hud-phase {
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+.launch-hud .hud-stats {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.launch-hud .hud-stats b {
+  color: var(--color-text);
+  font-weight: normal;
+}
+
+.launch-hud .hud-controls {
+  pointer-events: auto;
+}
+
+.launch-hud .hud-label {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.button-group.compact {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0;
+}
+
+.preset-button.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.launch-button {
+  padding: 10px 22px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.launch-button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .launch-scene canvas {

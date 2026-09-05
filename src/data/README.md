@@ -31,6 +31,7 @@
 | `destinations.js` | `DESTINATIONS`, `DESTINATION_CATEGORIES`, `DEFAULT_DESTINATION_ID`, `findDestination(id)` | 천체 12개 (id, 구분, 이름, 거리 m, 출처). 원 자료 단위(km, AU, 광년)를 `constants.js`로 m 변환. 기본 선택은 달 |
 
 | `rockets.js` | `SPEED_MIN`, `SPEED_MAX`, `SPEED_PRESETS`, `DEFAULT_SPEED` | 슬라이더 하한 11.2 km/s, 상한 0.99c, 프리셋 6개 (m/s) |
+| `falconHeavy.js` | `FALCON_HEAVY` | 팔콘 헤비 기본 제원. 로켓 제원 JSON 계약(docs/08 6절)과 같은 형식: `payloadMassKg`, `stages[]`(부스터 2, 코어, 2단), `geometry.parts[]`(3D 형상). 16단계에서 설계 로켓으로 교체 가능 (11단계) |
 | `organisms.js` | `ORGANISMS`, `AGE_UNIT_SECONDS`, `AGE_UNIT_LABEL` | 생물 5종 (id, 이름, 아이콘, 수명 초, 수명 표시 문자열, 출발 나이 입력 단위, 출처). 하루살이는 나이 단위가 시간, 나머지는 년 |
 
 - `destinations.js`와 `rockets.js`는 같은 폴더의 `constants.js`만 불러온다. (`utils/`를 쓰지 않는 이유: 이 폴더는 다른 폴더를 모른다는 규칙)

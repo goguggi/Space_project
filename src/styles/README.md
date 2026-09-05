@@ -13,4 +13,4 @@
 
 | 파일 | 설명 |
 |---|---|
-| `main.css` | 어두운 배경의 기본 배치. 색상은 `:root` 변수로 정의. `.panel`(구역), `.field-label`/`.field-select`(입력), `.info-list`(정보 목록), `.field-range`/`.range-scale`/`.readout`(슬라이더, 3단계), `.button-group`/`.preset-button`(프리셋, 3단계), `.radio-group`/`.radio-option`(편도/왕복, 4단계), `.result-table`/`.result-caption`/`.result-note`(결과 표, 5단계), `.stopwatch-*`(6단계), `.age-*`(출발 나이), `.chart-*`/`.bar-*`/`.swatch-*`(막대 그래프), `.survival-table`(생존 표) (7단계), `.launch-scene`(3D 캔버스 틀, 높이 480px, 10단계) |
+| `main.css` | 어두운 배경의 기본 배치. 색상은 `:root` 변수로 정의. `.panel`(구역), `.field-label`/`.field-select`(입력), `.info-list`(정보 목록), `.field-range`/`.range-scale`/`.readout`(슬라이더, 3단계), `.button-group`/`.preset-button`(프리셋, 3단계), `.radio-group`/`.radio-option`(편도/왕복, 4단계), `.result-table`/`.result-caption`/`.result-note`(결과 표, 5단계), `.stopwatch-*`(6단계), `.age-*`(출발 나이), `.chart-*`/`.bar-*`/`.swatch-*`(막대 그래프), `.survival-table`(생존 표) (7단계), `.launch-frame`/`.launch-scene`(3D 캔버스 틀, 높이 520px, 10단계), `.launch-hud`/`.hud-*`(캔버스 위 HUD), `.launch-button`, `.preset-button.active`, `.button-group.compact` (11단계) |
