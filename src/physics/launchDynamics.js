@@ -84,6 +84,33 @@ export function createLaunchSimulation(spec, options = {}) {
   let liftedOff = false;
   const pendingEvents = [];
 
+  // 분리된 단(12단계): 각자 중력만 받으며 움직이는 독립 물체. 13단계에서 착륙 유도가 붙는다.
+  // { id, stageId, label, r, v, mass, propellant, recovery, status: 'falling' | 'landed' | 'impact' }
+  const bodies = [];
+
+  function integrateBody(body, h) {
+    if (body.status !== 'falling' && body.status !== 'discarded') return;
+    const rNorm = Math.hypot(body.r.x, body.r.y);
+    const g = gravityOn ? EARTH_GM / (rNorm * rNorm) : 0;
+    body.v.x -= g * (body.r.x / rNorm) * h;
+    body.v.y -= g * (body.r.y / rNorm) * h;
+    body.r.x += body.v.x * h;
+    body.r.y += body.v.y * h;
+    const alt = Math.hypot(body.r.x, body.r.y) - EARTH_RADIUS;
+    if (alt <= 0 && body.status === 'falling') {
+      const n = Math.hypot(body.r.x, body.r.y);
+      body.r.x *= EARTH_RADIUS / n;
+      body.r.y *= EARTH_RADIUS / n;
+      const speed = Math.hypot(body.v.x, body.v.y);
+      body.impactSpeed = speed;
+      body.v.x = 0;
+      body.v.y = 0;
+      // 13단계 전까지는 착륙 유도가 없으므로 모두 충돌로 기록된다. 유도가 붙으면 저속 접지는 'landed'가 된다
+      body.status = speed < 5 ? 'landed' : 'impact';
+      pendingEvents.push({ type: body.status, stageId: body.stageId, label: body.label, time, speed });
+    }
+  }
+
   function attachedMass() {
     let m = spec.payloadMassKg;
     for (const s of stages) if (s.attached) m += s.dryMass + s.propellant;
@@ -123,12 +150,18 @@ export function createLaunchSimulation(spec, options = {}) {
    * @returns {object[]} 이 동안 일어난 사건들 (ignition / separation / complete)
    */
   function step(dt) {
-    if (complete) return [];
     let remaining = dt;
-    while (remaining > 0 && !complete) {
+    while (remaining > 0) {
       const h = Math.min(stepSeconds, remaining);
-      integrate(h);
+      if (!complete) {
+        integrate(h);
+      } else {
+        // 우주선은 끝났어도 떨어지는 단들은 계속 움직인다
+        for (const body of bodies) integrateBody(body, h);
+        time += h;
+      }
       remaining -= h;
+      if (complete && !bodies.some((b) => b.status === 'falling')) break;
     }
     const events = pendingEvents.splice(0);
     return events;
@@ -201,6 +234,9 @@ export function createLaunchSimulation(spec, options = {}) {
 
     time += h;
 
+    // 분리된 물체들도 같은 시간만큼 전진
+    for (const body of bodies) integrateBody(body, h);
+
     // 단 분리: 연소 중이던 단이 예비 추진제까지 다 썼으면 분리
     let separated = false;
     for (const s of stages) {
@@ -209,10 +245,19 @@ export function createLaunchSimulation(spec, options = {}) {
         s.burning = false;
         s.separatedAt = time;
         separated = true;
+        // 분리 직후 같은 위치·같은 속도의 독립 물체가 된다 (docs/03_physics.md 6.3절)
+        // 회수하지 않는 단(2단)은 'discarded': 관성으로 계속 날아가되 종료 판정에서는 제외한다
+        const body = {
+          id: `body-${s.id}`, stageId: s.id, label: s.label,
+          r: { ...vehicle.r }, v: { ...vehicle.v },
+          mass: s.dryMass + s.propellant, propellant: s.propellant,
+          recovery: s.recovery, status: s.recovery?.enabled ? 'falling' : 'discarded', separatedAt: time,
+        };
+        bodies.push(body);
         pendingEvents.push({
           type: 'separation', stageId: s.id, label: s.label, time,
           state: { r: { ...vehicle.r }, v: { ...vehicle.v }, dir: { ...vehicle.dir } },
-          stage: s,
+          stage: s, body,
         });
       }
     }
@@ -228,7 +273,10 @@ export function createLaunchSimulation(spec, options = {}) {
   return {
     stages,
     vehicle,
+    bodies,
     step,
+    // 우주선 완료 + 회수 대상 물체가 모두 땅에 닿음 (버려진 단은 제외)
+    isAllSettled: () => complete && !bodies.some((b) => b.status === 'falling'),
     getTime: () => time,
     getAltitude: altitude,
     getSpeed: () => Math.hypot(vehicle.v.x, vehicle.v.y),

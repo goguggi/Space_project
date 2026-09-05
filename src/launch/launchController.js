@@ -35,22 +35,55 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     onTimeScale: (n) => timeline.setTimeScale(n),
     onSkip: () => {
       const events = timeline.skip();
+      handleEvents(events);
       placeRocket();
+      hud.update(timeline);
       if (timeline.sim.isComplete()) handlers.onComplete?.(events);
     },
   });
 
+  // 분리된 단의 3D 그룹: 물체 id → 그룹 (12단계)
+  const detachedGroups = new Map();
+
+  function toScene(r) {
+    return [r.x / S, (r.y - EARTH_RADIUS) / S, 0];
+  }
+
   // 물리 상태 → 화면 배치
   function placeRocket() {
     const { r, dir } = timeline.sim.vehicle;
-    rocket.root.position.set(r.x / S, (r.y - EARTH_RADIUS) / S, 0);
+    rocket.root.position.set(...toScene(r));
     // 로켓의 +Y 축을 추력 방향으로 맞춘다 (발사 평면 안에서 z축 회전)
     rocket.root.rotation.z = -Math.atan2(dir.x, dir.y);
     rocket.update(timeline.sim);
+    placeBodies();
+  }
+
+  // 분리된 단들을 각자의 물리 위치에 놓는다. 방향은 속도 방향(떨어지는 자세)
+  function placeBodies() {
+    for (const body of timeline.sim.bodies) {
+      const group = detachedGroups.get(body.id);
+      if (!group) continue;
+      group.position.set(...toScene(body.r));
+      const speed = Math.hypot(body.v.x, body.v.y);
+      if (speed > 1) {
+        group.rotation.z = -Math.atan2(body.v.x, body.v.y);
+      }
+    }
+  }
+
+  function handleEvents(events) {
+    for (const e of events) {
+      if (e.type === 'separation' && e.body) {
+        const group = rocket.detachStage(e.stageId, scene.scene);
+        if (group) detachedGroups.set(e.body.id, group);
+      }
+    }
   }
 
   scene.onFrame((dt) => {
     const events = timeline.update(dt);
+    handleEvents(events);
     placeRocket();
     follow.update();
     hud.update(timeline);
@@ -65,6 +98,10 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     launch() { timeline.start(); },
     reset() {
       timeline.reset();
+      // 분리된 단 그룹을 로켓에 다시 붙인다 (원래 국소 좌표로)
+      for (const [, group] of detachedGroups) scene.scene.remove(group);
+      detachedGroups.clear();
+      rocket.reassemble();
       placeRocket();
       follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));
       hud.update(timeline);

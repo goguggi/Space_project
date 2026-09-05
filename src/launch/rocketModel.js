@@ -67,7 +67,9 @@ export function createRocketModel(spec) {
       stageGroups.set(part.stageId, g);
       root.add(g);
     }
-    stageGroups.get(part.stageId).add(makePart(part));
+    const mesh = makePart(part);
+    mesh.userData.partId = part.partId;
+    stageGroups.get(part.stageId).add(mesh);
     top = Math.max(top, (part.position[1] + part.size[1] / 2) / S);
   }
 
@@ -78,6 +80,8 @@ export function createRocketModel(spec) {
     const lowest = parts.reduce((a, b) => (a.position[1] - a.size[1] / 2 < b.position[1] - b.size[1] / 2 ? a : b));
     const flame = makeFlame(lowest.size[0]);
     flame.position.set(lowest.position[0] / S, (lowest.position[1] - lowest.size[1] / 2) / S, lowest.position[2] / S);
+    flame.userData.flameOf = stage.id;
+    flame.userData.flameHome = flame.position.clone();
     stageGroups.get(stage.id).add(flame);
     flames.set(stage.id, flame);
   }
@@ -96,5 +100,45 @@ export function createRocketModel(spec) {
     }
   }
 
-  return { root, stageGroups, flames, update, heightUnits: top };
+  /**
+   * 단을 로켓에서 떼어 장면의 독립 물체로 만든다 (12단계).
+   * 세계 좌표계의 위치·회전을 유지한 채 부모를 scene으로 바꾼다.
+   * @param {string} stageId
+   * @param {THREE.Scene} scene
+   * @returns {THREE.Group | null}
+   */
+  function detachStage(stageId, scene) {
+    const group = stageGroups.get(stageId);
+    if (!group || group.parent !== root) return null;
+    scene.attach(group);   // 세계 변환 유지
+    // 분리된 단의 국소 원점은 발사대 기준이므로, 물체 위치를 단의 중심에 맞추기 위해 자식들을 되돌려 놓는다
+    const center = new THREE.Vector3();
+    const box = new THREE.Box3().setFromObject(group);
+    box.getCenter(center);
+    const offset = group.worldToLocal(center.clone());
+    for (const child of group.children) child.position.sub(offset);
+    group.position.copy(center);
+    return group;
+  }
+
+  /**
+   * 떼어냈던 단들을 원래 자리에 다시 붙인다 ("처음으로").
+   */
+  function reassemble() {
+    for (const [stageId, group] of stageGroups) {
+      if (group.parent === root) continue;
+      group.removeFromParent();
+      group.position.set(0, 0, 0);
+      group.rotation.set(0, 0, 0);
+      // detachStage에서 옮긴 자식 위치를 원래대로: 부품 정의로 다시 배치
+      for (const child of group.children) {
+        const part = spec.geometry.parts.find((p) => p.stageId === stageId && child.userData.partId === p.partId);
+        if (part) child.position.set(part.position[0] / S, part.position[1] / S, part.position[2] / S);
+        else if (child.userData.flameOf) child.position.copy(child.userData.flameHome);
+      }
+      root.add(group);
+    }
+  }
+
+  return { root, stageGroups, flames, update, detachStage, reassemble, heightUnits: top };
 }

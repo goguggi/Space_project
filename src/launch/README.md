@@ -34,10 +34,10 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 | 파일 | 내보내는 것 | 설명 |
 |---|---|---|
 | `launchScene.js` | `createLaunchScene(container)`, `SCENE_METERS_PER_UNIT`, `EARTH_DISPLAY_RADIUS` | 렌더러(로그 깊이), 장면, 카메라, 지구(구)와 옅은 대기, 발사대(받침과 탑), 태양광·반구광, 별 배경, OrbitControls. 반환값: `start()`, `stop()`, `onFrame(fn)`(매 프레임 dt초), `scene`, `camera`, `controls`, `surfaceY`. 탭이 숨겨지면 setTimeout으로 시뮬레이션만 계속 돌린다 (10단계) |
-| `rocketModel.js` | `createRocketModel(spec)` | 제원의 `geometry.parts[]`로 단별 그룹(`stageGroups`)과 화염(`flames`)을 만든다. `update(sim)`이 연소 중인 단의 화염만 보이게 하고 흔들림을 준다 (11단계) |
+| `rocketModel.js` | `createRocketModel(spec)` | 제원의 `geometry.parts[]`로 단별 그룹(`stageGroups`)과 화염(`flames`)을 만든다. `update(sim)`이 연소 중인 단의 화염만 보이게 하고 흔들림을 준다 (11단계). `detachStage(id, scene)`은 단을 세계 좌표 그대로 장면의 독립 그룹으로 떼어내고, `reassemble()`은 다시 붙인다 (12단계) |
 | `followCamera.js` | `createFollowCamera(camera, controls)` | 대상이 움직인 만큼 카메라를 같이 옮기고 OrbitControls 중심을 대상에 둔다. 사용자가 돌린 시점 각도가 유지된다. `setTarget(obj, offset)`, `update()` (11단계) |
 | `launchTimeline.js` | `createLaunchTimeline(spec)`, `TIME_SCALES` | 시뮬레이션 시계와 배속(1·2·5·10배), 사건 기록, 단계 이름. `start()`, `pause()`, `reset()`, `skip()`(남은 과정 즉시 계산), `update(dtReal)` (11단계) |
 | `launchHud.js` | `createLaunchHud(container, {onTimeScale, onSkip})` | T+ 시계, 단계 이름, 고도·속도·질량, 배속 버튼, 건너뛰기. `update(timeline)` (11단계 기본형, 14단계 확장) |
-| `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계) |
+| `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계). 분리 사건이 오면 단을 떼어내 `detachedGroups`에 넣고 매 프레임 각 물체의 위치(속도 방향으로 회전)에 놓는다 (12단계) |
 
 - `main.js`는 `launchController.js`를 동적 `import()`로 불러온다. 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 하기 위함이다.

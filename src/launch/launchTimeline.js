@@ -31,21 +31,19 @@ export function createLaunchTimeline(spec) {
       events.push(e);
       if (e.type === 'ignition') phase = `${e.label} 점화`;
       if (e.type === 'separation') phase = `${e.label} 분리`;
-      if (e.type === 'complete') {
-        phase = '2단 분리 완료, 우주선 출발';
-        running = false;
-      }
-      if (e.type === 'crash') {
-        phase = '추락 (궤도 진입 실패)';
-        running = false;
-      }
+      if (e.type === 'complete') phase = '2단 분리 완료, 우주선 출발';
+      if (e.type === 'crash') phase = '추락 (궤도 진입 실패)';
+      if (e.type === 'landed') phase = `${e.label} 착륙`;
+      if (e.type === 'impact') phase = `${e.label} 지면 충돌`;
     }
+    // 우주선이 끝났고 떨어지는 단도 모두 땅에 닿으면 멈춘다 (12단계)
+    if (sim.isAllSettled()) running = false;
   }
 
   return {
     get sim() { return sim; },
     start() {
-      if (sim.isComplete()) return;
+      if (sim.isAllSettled()) return;
       running = true;
       if (sim.getTime() === 0) phase = '발사';
     },
@@ -60,7 +58,7 @@ export function createLaunchTimeline(spec) {
       // 남은 발사 과정을 한 번에 계산한다 (화면 갱신 없이)
       const collected = [];
       let guard = 0;
-      while (!sim.isComplete() && guard < SKIP_MAX_SECONDS / SKIP_CHUNK_SECONDS) {
+      while (!sim.isAllSettled() && guard < SKIP_MAX_SECONDS / SKIP_CHUNK_SECONDS) {
         collected.push(...sim.step(SKIP_CHUNK_SECONDS));
         guard += 1;
       }
