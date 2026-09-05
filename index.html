@@ -7,79 +7,83 @@
   <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body>
-  <header class="app-header">
-    <h1>우주여행 시간 지연 계산기</h1>
-    <p class="app-subtitle">지구에서 출발한 우주선의 속도와 거리에 따른 시간 지연을 생물의 수명과 비교합니다.</p>
-  </header>
+  <!-- 15단계 레이아웃 (D-54): 3D 장면이 화면 전체 바탕, 오른쪽에 제어 패널이 겹쳐 뜬다 -->
+  <div class="app">
 
-  <main class="app-main">
-    <!-- 1단계: 출발 위치(발사장) 선택 -->
-    <section class="panel" id="launch-site-panel">
-      <h2>1. 출발 위치 (발사장)</h2>
-      <div id="launch-site-selector"></div>
+    <!-- ── 무대: 발사 장면과 항행 장면이 같은 자리에서 번갈아 보인다 ── -->
+    <section class="stage" id="stage">
+      <div id="launch-scene" class="scene-layer"></div>
+      <div id="cruise-scene" class="scene-layer"></div>
+
+      <!-- 계기판 겹침 층 (마우스 이벤트는 통과시키고, 버튼만 받는다) -->
+      <div id="launch-hud" class="hud-layer"></div>
+      <div id="cruise-hud" class="hud-layer"></div>
+
+      <header class="stage-top">
+        <h1>우주여행 시간 지연 계산기</h1>
+        <p id="stage-subtitle">발사장과 목적지, 속도를 고르고 발사하세요.</p>
+      </header>
+
+      <div class="stage-bottom" id="mission-bar-container"></div>
+
+      <button type="button" class="panel-toggle" id="panel-toggle" aria-label="제어 패널 접기/펼치기">☰</button>
     </section>
 
-    <!-- 2단계: 목적지(천체) 선택 -->
-    <section class="panel" id="destination-panel">
-      <h2>2. 목적지 (천체)</h2>
-      <div id="destination-selector"></div>
-    </section>
+    <!-- ── 제어 패널 ── -->
+    <aside class="panel" id="panel">
+      <div class="panel-scroll">
 
-    <!-- 3단계: 속도 슬라이더, 프리셋, 로런츠 인자 -->
-    <section class="panel" id="speed-panel">
-      <h2>3. 우주선 속도</h2>
-      <div id="speed-slider-container"></div>
-      <div id="speed-presets-container"></div>
-      <div id="lorentz-container"></div>
-    </section>
+        <section class="card">
+          <h2><span class="card-index">01</span> 발사장</h2>
+          <div id="launch-site-selector"></div>
+        </section>
 
-    <!-- 4단계: 여행 형태(편도/왕복). 계산 결과 표시는 5단계에서 추가된다 -->
-    <section class="panel" id="trip-panel">
-      <h2>4. 여행 형태</h2>
-      <div id="trip-type-container"></div>
-    </section>
+        <section class="card">
+          <h2><span class="card-index">02</span> 목적지</h2>
+          <div id="destination-selector"></div>
+        </section>
 
-    <!-- 5단계: 결과 수치 표 -->
-    <section class="panel" id="result-panel">
-      <h2>5. 계산 결과</h2>
-      <div id="result-table-container"></div>
-    </section>
+        <section class="card">
+          <h2><span class="card-index">03</span> 속도</h2>
+          <div id="speed-slider-container"></div>
+          <div id="speed-presets-container"></div>
+          <div id="lorentz-container"></div>
+        </section>
 
-    <!-- 6단계: 스톱워치 애니메이션 -->
-    <section class="panel" id="stopwatch-panel">
-      <h2>6. 스톱워치</h2>
-      <div id="stopwatch-container"></div>
-    </section>
+        <section class="card">
+          <h2><span class="card-index">04</span> 여행 형태</h2>
+          <div id="trip-type-container"></div>
+        </section>
 
-    <!-- 7단계: 생물 수명 비교 -->
-    <section class="panel" id="lifespan-panel">
-      <h2>7. 생물 수명과 비교</h2>
-      <div id="departure-age-container"></div>
-      <div id="lifespan-chart-container"></div>
-      <div id="survival-container"></div>
-    </section>
+        <section class="card card-result">
+          <h2><span class="card-index">05</span> 시계</h2>
+          <div id="stopwatch-container"></div>
+        </section>
 
-    <!-- 10~11단계: 3D 발사 장면 (Three.js), 로켓과 발사 물리 -->
-    <section class="panel" id="launch-panel">
-      <h2>발사 장면 (3D)</h2>
-      <p class="field-label">마우스 드래그로 시점 회전, 휠로 확대·축소. 발사 후에는 카메라가 로켓을 따라갑니다.</p>
-      <div id="launch-button-container"></div>
-      <div class="launch-frame">
-        <div id="launch-scene" class="launch-scene"></div>
-        <div id="launch-hud"></div>
+        <section class="card card-result">
+          <h2><span class="card-index">06</span> 계산 결과</h2>
+          <div id="result-table-container"></div>
+        </section>
+
+        <section class="card card-result">
+          <h2><span class="card-index">07</span> 생물 수명과 비교</h2>
+          <div id="departure-age-container"></div>
+          <div id="lifespan-chart-container"></div>
+          <div id="survival-container"></div>
+        </section>
+
+        <footer class="panel-footer">
+          <p>15단계 · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
+        </footer>
       </div>
-    </section>
-  </main>
-
-  <footer class="app-footer">
-    <p>단계별 개발 중 · 현재 14단계(화면 분할 카메라와 HUD) · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
-  </footer>
+    </aside>
+  </div>
 
   <!-- Three.js 부속 모듈(OrbitControls 등)이 'three'라는 이름으로 본체를 찾으므로 그 이름을 동봉 파일에 연결한다 -->
   <script type="importmap">
     { "imports": { "three": "./lib/three/three.module.js" } }
   </script>
-  <!-- ES 모듈 진입점. file:// 로 열면 동작하지 않으므로 로컬 서버로 연다 (docs/02_architecture.md 5절) -->
+  <!-- ES 모듈 진입점. file:// 로 열려면 `열기.html`을 쓴다 (docs/02_architecture.md 5절) -->
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

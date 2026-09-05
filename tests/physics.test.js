@@ -8,6 +8,7 @@ import { computeTimeDilation, TRIP_TYPES } from '../src/physics/timeDilation.js'
 import { createLaunchSimulation } from '../src/physics/launchDynamics.js';
 import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
 import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.js';
+import { journeyAt, angularRadius, dopplerFactor, aberratedAngle, beta } from '../src/physics/journey.js';
 import { STANDARD_GRAVITY, EARTH_RADIUS } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
@@ -114,6 +115,37 @@ cases.push(['보조 화면: 회수 단이 없으면 대상 없음 (1 = null)', 1
 // 실제 발사 결과에서는 코어가 마지막으로 내려앉으므로 끝까지 코어를 비춘다
 const finalTarget = selectLandingTarget(fh.bodies);
 cases.push(['보조 화면: 발사 종료 시 대상 = 중앙 코어 (1 = 그렇다)', 1, finalTarget?.stageId === 'core' ? 1 : 0, 1e-9]);
+
+// ---- 항행 계산 (15단계): docs/03_physics.md 등속 모델 + 상대론적 도플러·광행차 ----
+const jResult = { earthTime: 1000, shipTime: 400 };
+
+const jHalf = journeyAt({ distance: 1e12, roundTrip: false, result: jResult, progress: 0.5 });
+cases.push(['항행: 편도 절반에서 지구와의 거리 (m)', 5e11, jHalf.fromEarth, 1e-9]);
+cases.push(['항행: 편도 절반에서 남은 거리 (m)', 5e11, jHalf.toTarget, 1e-9]);
+cases.push(['항행: 편도 절반에서 지구 시간 (s)', 500, jHalf.earthElapsed, 1e-9]);
+cases.push(['항행: 편도 절반에서 우주선 시간 (s)', 200, jHalf.shipElapsed, 1e-9]);
+
+// 왕복은 절반에서 목적지에 닿고, 그 뒤에는 지구로 되돌아온다
+const jTurn = journeyAt({ distance: 1e12, roundTrip: true, result: jResult, progress: 0.5 });
+cases.push(['항행: 왕복 반환점에서 남은 거리 = 0 (m, 1 = 그렇다)', 1, Math.abs(jTurn.toTarget) < 1 ? 1 : 0, 1e-9]);
+const jBack = journeyAt({ distance: 1e12, roundTrip: true, result: jResult, progress: 0.75 });
+cases.push(['항행: 왕복 3/4 지점에서 지구와의 거리 (m)', 5e11, jBack.fromEarth, 1e-9]);
+cases.push(['항행: 왕복 3/4 지점은 복귀 구간 (1 = 그렇다)', 1, jBack.outbound ? 0 : 1, 1e-9]);
+
+// 각반지름: 지구 반지름 6,371 km를 100,000 km 거리에서 보면 atan(6371/100000)
+cases.push(['각반지름 θ = atan(R/d) (rad)', Math.atan(6371 / 100000), angularRadius(6.371e6, 1e8), 1e-12]);
+
+// 상대론적 도플러: β = 0.6 → √(1.6/0.4) = 2
+cases.push(['도플러 인자 (β = 0.6, 정면)', 2, dopplerFactor(0.6, true), 1e-12]);
+cases.push(['도플러 인자 (β = 0.6, 후면) = 1/2', 0.5, dopplerFactor(0.6, false), 1e-12]);
+
+// 광행차: β = 0.6 에서 옆쪽(90°) 별은 앞쪽으로 당겨져 cos θ′ = +β → θ′ = acos(0.6) ≈ 53°
+cases.push(['광행차 θ = 90°, β = 0.6 (rad)', Math.acos(0.6), aberratedAngle(Math.PI / 2, 0.6), 1e-12]);
+cases.push(['광행차: 정면(0°)은 그대로 정면 (rad, 1 = 그렇다)', 1, aberratedAngle(0, 0.6) < 1e-9 ? 1 : 0, 1e-9]);
+cases.push(['광행차: 뒤쪽(180°)은 그대로 뒤쪽 (rad)', Math.PI, aberratedAngle(Math.PI, 0.6), 1e-9]);
+cases.push(['광행차: 항상 앞으로 몰린다 (θ′ < θ, 1 = 그렇다)', 1, aberratedAngle(2, 0.9) < 2 ? 1 : 0, 1e-9]);
+
+cases.push(['β = v/c (0.99c)', 0.99, beta(0.99 * c), 1e-12]);
 
 // 표 출력
 const tbody = document.getElementById('results');

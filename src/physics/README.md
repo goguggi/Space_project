@@ -30,3 +30,17 @@
 | `landingGuidance.js` | `guideBody(body, h)`, `timeToGround`, `landingBurnAltitude`, `localFrame`, `predictedDownrange` | 재착륙 유도 (docs/03_physics.md 6.5절). 국소 평면 근사. 단계: coast → boostback(수평 속도를 목표 낙하 지점에 맞춤, 무인선은 0으로) → fall(탄도 예측 수평 보정, 계획 감속 3g로 연소 시작 고도) → landing(호버슬램 v²/2h + g, 상한 4g. 마지막 100 m는 수평 정렬 후 고도 비례 하강) → landed(수직·수평 3 m/s 이하). 검증: 부스터 2,001 m·1.5 m/s, 코어 무인선·1.5 m/s (13단계) |
 | `staging.js` | (만들지 않음) | 계획에 있던 파일. 단 분리 조건이 적분 루프와 한 몸이라 `launchDynamics.js` 안에 구현했다 |
 | `survival.js` | `judgeSurvival(organism, departureAge, elapsed)`, `judgeAll(organisms, ages, result)` | 생존 판정: 출발 나이 + 경과 시간 < 수명 (D-33). `judgeAll`은 생물마다 우주선 탑승(`onShip`)과 지구 잔류(`onEarth`) 두 경우를 돌려준다 |
+
+## journey.js (15단계)
+
+항행 계산. 임무 진행률 p(0~1)를 받아 그 순간의 상태를 돌려준다. DOM도 Three.js도 모른다.
+
+| 함수 | 내용 |
+|---|---|
+| `journeyAt({distance, roundTrip, result, progress})` | 지구와의 거리, 남은 거리, 지나온 거리, 지구·우주선 경과 시간. 왕복은 절반에서 되돌아온다 |
+| `angularRadius(R, d)` | 겉보기 반지름 θ = atan(R/d). 3D 장면이 천체 크기를 정할 때 쓴다 (D-53) |
+| `dopplerFactor(β, approaching)` | 상대론적 도플러 √((1+β)/(1−β)). 앞쪽 별이 파랗게, 뒤쪽이 붉게 |
+| `aberratedAngle(θ, β)` | 광행차 cos θ′ = (cos θ + β)/(1 + β cos θ). 빠를수록 별이 앞으로 몰린다 |
+| `beta(speed)`, `animationDurationMs(seconds)` | v/c, 재생 길이 3~15초 (6단계 규칙을 여기로 옮김) |
+
+검증: `tests/physics.test.js`의 항행 항목 12개.

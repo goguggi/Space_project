@@ -35,3 +35,17 @@
 | `organisms.js` | `ORGANISMS`, `AGE_UNIT_SECONDS`, `AGE_UNIT_LABEL` | 생물 5종 (id, 이름, 아이콘, 수명 초, 수명 표시 문자열, 출발 나이 입력 단위, 출처). 하루살이는 나이 단위가 시간, 나머지는 년 |
 
 - `destinations.js`와 `rockets.js`는 같은 폴더의 `constants.js`만 불러온다. (`utils/`를 쓰지 않는 이유: 이 폴더는 다른 폴더를 모른다는 규칙)
+
+## celestialBodies.js (15단계)
+
+목적지 12개와 지구의 **3D 표시용 데이터**. 거리는 `destinations.js`가 갖고, 여기에는 생김새만 둔다.
+
+| 항목 | 내용 |
+|---|---|
+| `radiusM` | 실제 반지름 (m). 출처는 항목마다 주석에 적었다 (NASA 팩트시트, IAU 공칭값 등) |
+| `displayRadiusM` | 성운·은하처럼 광년 단위인 천체를 화면에서 줄여 그릴 때 쓰는 값 |
+| `kind` | `planet` / `star` / `moon` / `nebula` / `galaxy`. 그리는 방법이 달라진다 |
+| `color`, `atmosphere`, `glow`, `bands`, `ring`, `disk` | 단색 구·대기·발광·줄무늬·고리·원반 표현 (D-56) |
+
+내보내는 함수: `getBodyVisual(id)`, `displayRadius(visual)`.
+외부 이미지를 쓰지 않고 캔버스로 텍스처를 만든다 (라이브러리·자산 동봉 원칙).

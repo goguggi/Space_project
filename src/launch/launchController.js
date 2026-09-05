@@ -35,15 +35,18 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
 
   let timeline = createLaunchTimeline(spec);
 
+  // 남은 발사 과정을 즉시 계산해 끝낸다 (HUD 버튼과 임무 조작 막대가 함께 쓴다)
+  function skip() {
+    const events = timeline.skip();
+    handleEvents(events);
+    placeRocket();
+    refreshViews();
+    if (timeline.sim.isComplete()) handlers.onComplete?.(events);
+  }
+
   const hud = createLaunchHud(hudContainer, {
     onTimeScale: (n) => timeline.setTimeScale(n),
-    onSkip: () => {
-      const events = timeline.skip();
-      handleEvents(events);
-      placeRocket();
-      refreshViews();
-      if (timeline.sim.isComplete()) handlers.onComplete?.(events);
-    },
+    onSkip: skip,
   });
 
   // 착륙 장면 보조 화면 (14단계). HUD와 같은 요소에 얹어 3D 캔버스 위에 겹친다
@@ -135,6 +138,9 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
 
   return {
     launch() { timeline.start(); },
+    skip,
+    /** 항행 화면으로 넘어갈 때 발사 계기판을 숨긴다 (15단계) */
+    setHudVisible(on) { hudContainer.style.display = on ? '' : 'none'; },
     reset() {
       timeline.reset();
       // 분리된 단 그룹을 로켓에 다시 붙인다 (원래 국소 좌표로)

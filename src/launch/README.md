@@ -45,3 +45,12 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 | `launchController.js` | `createLaunchController(sceneContainer, hudContainer, spec, {onComplete})` | 위 모듈을 조립. 매 프레임 시뮬레이션 전진 → 물리 좌표를 화면 좌표로 변환해 로켓 배치(추력 방향으로 회전) → 카메라·HUD 갱신. `launch()`, `reset()`, `timeline` (11단계). 분리 사건이 오면 단을 떼어내 `detachedGroups`에 넣고 매 프레임 각 물체의 위치에 놓는다 (12단계). 회수 단은 국소 수직 자세로 세우고 착륙 연소 중 화염을 켠다. 착륙장은 처음부터, 무인선은 유도가 위치를 확정하는 순간 만든다 (13단계). 매 프레임 `refreshViews()`가 착륙 대상을 다시 골라 보조 화면과 HUD에 넘기고, 주 화면을 그린 뒤 `pip.render()`를 부른다 (14단계) |
 
 - `main.js`는 `launchController.js`를 동적 `import()`로 불러온다. 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 하기 위함이다.
+
+## 15단계에서 추가된 파일
+
+| 파일 | 내보내는 것 | 설명 |
+|---|---|---|
+| `cruiseScene.js` | `createCruiseScene(container)` | 우주 항행 장면. 별 배경(광행차·도플러 적용), 워프 선, 멀어지는 지구와 다가오는 목적지 천체, 우주선. 아주 먼 거리는 겉보기 크기로 그린다 (D-53). 천체가 점보다 작을 때는 위치 표식을 띄운다. `setBodies(지구, 목적지)`, `setProgress(journey, β)`, `show/hide/start/stop` |
+| `cruiseHud.js` | `createCruiseHud(container)` | 항행 계기판. 목적지, 진행 막대, 남은·지나온 거리, 지구·우주선 시간, β와 γ. `update(info)`, `setVisible(on)` |
+
+`launchController.js`에 `skip()`과 `setHudVisible(on)`이 추가되어 임무 조작 막대가 발사 구간을 건너뛰고 항행 화면으로 넘어갈 수 있다.

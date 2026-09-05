@@ -51,3 +51,12 @@
 - 결과를 그리는 구성 요소(`resultTable` 등)는 `main.js`에서 입력 구성 요소보다 먼저 만든다. 입력 구성 요소가 생성 직후 첫 값을 알리며 `recompute()`가 호출되기 때문이다.
 
 - `main.js`에서 로런츠 표시를 속도 슬라이더보다 먼저 만든다. 슬라이더가 생성 직후 첫 속도를 알리기 때문이다.
+
+## 15단계에서 바뀐 것
+
+| 파일 | 내용 |
+|---|---|
+| `missionBar.js` (새 파일) | 화면 아래 임무 조작 막대. 발사 / 재생·일시정지 / **진행 슬라이더(직접 끌기)** / 배속 / 건너뛰기 / 처음으로. `createMissionBar(container, handlers)`, `update(state)` |
+| `lifespanChart.js` | 행 DOM을 한 번만 만들고 `setResult(result, ages)`로 눈금을, `setProgress(p)`로 막대 길이만 바꾼다. 진행에 따라 생존→사망 표시가 실시간으로 바뀐다 (D-55) |
+| `stopwatch.js` | 스스로 애니메이션하지 않는다. `setTimes(지구초, 우주선초)`와 `setStatus(글)`로 임무 시계가 값을 넣어 준다 |
+| `survivalIcons.js` | 그대로. `main.js`가 매 시점의 경과 시간으로 다시 판정해 넘긴다 |
