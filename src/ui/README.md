@@ -34,3 +34,4 @@
 | 파일 | 내보내는 것 | 설명 |
 |---|---|---|
 | `launchSiteSelector.js` | `createLaunchSiteSelector(container, onChange)` | 발사장 `<select>`와 정보 목록(이름, 국가, 위도, 경도, 비고). 반환값의 `getSelected()`로 현재 선택을 읽는다 |
+| `destinationSelector.js` | `createDestinationSelector(container, onChange)` | 구분별 `<optgroup>`으로 묶은 천체 `<select>`와 정보 목록(이름, 구분, 평균 거리, km 환산, 근거) |

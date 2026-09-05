@@ -19,3 +19,4 @@
 | 파일 | 내보내는 것 | 설명 |
 |---|---|---|
 | `formatCoordinate.js` | `formatLatitude(deg)`, `formatLongitude(deg)` | 도 단위 실수를 "34.43° N", "80.60° W" 형태로 서식 (1단계) |
+| `units.js` | `kmToMeters`, `metersToKm`, `auToMeters`, `metersToAu`, `lightYearsToMeters`, `metersToLightYears`, `kmPerSecToMetersPerSec`, `metersPerSecToKmPerSec`, `fractionOfCToMetersPerSec`, `metersPerSecToFractionOfC`, `formatDistance(m)`, `formatNumber(v, digits)` | 거리·속도 단위 변환과 거리 자동 단위 서식. 0.01 AU 미만 km, 0.1 광년 미만 AU, 그 이상 광년, 1만 광년 이상 "만 광년" (2단계) |
