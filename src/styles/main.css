@@ -139,6 +139,29 @@ body {
   color: var(--color-accent);
 }
 
+/* 라디오 선택 (4단계) */
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.radio-option small {
+  color: var(--color-muted);
+  margin-left: 4px;
+}
+
+.app-footer a {
+  color: var(--color-accent);
+}
+
 .app-footer {
   text-align: center;
   color: var(--color-muted);

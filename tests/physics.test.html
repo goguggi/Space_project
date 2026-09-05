@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>계산 검증 - 우주여행 시간 지연 계산기</title>
+  <style>
+    body { font-family: "Malgun Gothic", sans-serif; background: #0b1020; color: #e8ecf7; padding: 20px; }
+    h1 { font-size: 1.3rem; }
+    table { border-collapse: collapse; width: 100%; max-width: 1000px; font-variant-numeric: tabular-nums; }
+    th, td { border: 1px solid #2a3557; padding: 6px 10px; text-align: left; font-size: 0.9rem; }
+    th { background: #151c33; }
+    .pass { color: #6fe39a; font-weight: bold; }
+    .fail { color: #ff7a7a; font-weight: bold; }
+    #summary { margin: 12px 0; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <h1>계산 검증 페이지</h1>
+  <p>docs/03_physics.md 5절의 기준값과 계산 결과를 비교한다. 로컬 서버로 열어야 한다: <code>http://localhost:8000/tests/physics.test.html</code></p>
+  <div id="summary">실행 중…</div>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>기대값</th><th>계산값</th><th>허용 오차</th><th>결과</th></tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+  <script type="module" src="./physics.test.js"></script>
+</body>
+</html>

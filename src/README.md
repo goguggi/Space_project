@@ -41,9 +41,11 @@ Three.js는 `launch/` 안의 파일에서만 불러온다.
 
 - 각 UI 구성 요소는 `create○○(container, onChange)` 형태의 함수로 만든다.
 - 선택이 바뀌면 `onChange`로 값을 알리고, `main.js`가 그 값을 `state`에 저장한다.
-- 뒤 단계의 구성 요소는 `state`를 읽어 계산과 표시를 한다.
+- 입력이 바뀔 때마다 `main.js`의 `recompute()`가 `physics/timeDilation.js`를 호출해 `state.result`(초 단위)를 갱신한다. (4단계)
+- 결과를 그리는 구성 요소(5~7단계)는 `recompute()` 안에서 `state.result`를 받아 갱신한다.
+- 개발 중에는 브라우저 콘솔에서 `window.__state`로 현재 상태를 볼 수 있다.
 
 ## 현재 파일 목록
 
-- `main.js` (1단계. 2단계 목적지, 3단계 속도·프리셋·로런츠 연결 추가)
+- `main.js` (1단계. 2단계 목적지, 3단계 속도·프리셋·로런츠, 4단계 편도/왕복과 `recompute()` 추가)
 - 나머지는 각 하위 폴더의 README.md 참고
