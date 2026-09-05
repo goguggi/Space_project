@@ -27,11 +27,17 @@
 
 ## 실행 방법 (로컬)
 
-저장소 최상위에서 아래를 실행한 뒤 브라우저로 `http://localhost:8000` 을 연다.
+**윈도우에서 가장 간단한 방법**: 저장소 최상위의 **`실행.bat`을 두 번 누른다.**
+로컬 서버가 뜨고 2초 뒤 브라우저에서 `http://localhost:8000` 이 열린다. 창을 닫으면 서버가 멈춘다.
+
+직접 띄우려면 저장소 최상위에서 아래 중 하나를 실행한 뒤 브라우저로 `http://localhost:8000` 을 연다.
 
 ```bash
 powershell -ExecutionPolicy Bypass -File tools/serve.ps1
+python -m http.server 8000
 ```
+
+`index.html`을 파일로 바로 열면(file://) ES 모듈이 막혀서 화면이 비어 보인다. 반드시 로컬 서버로 연다.
 
 ## 현재 상태
 

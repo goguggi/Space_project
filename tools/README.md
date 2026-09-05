@@ -17,3 +17,9 @@ powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 ```
 
 브라우저에서 `http://localhost:8000` 을 연다. 종료는 Ctrl+C.
+
+## 실행.bat (저장소 최상위)
+
+윈도우에서 두 번 눌러 바로 실행하는 파일. `py` → `python` → `tools/serve.ps1` 순서로 있는 것을 골라
+http://localhost:8000 에 로컬 서버를 띄우고 2초 뒤 기본 브라우저로 `index.html`을 연다.
+창을 닫거나 Ctrl+C를 누르면 서버가 멈춘다. 내용은 인코딩 문제를 피하려고 영어로만 적었다.
