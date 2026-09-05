@@ -113,5 +113,19 @@ createTripTypeSelector(
   },
 );
 
+// 10단계: 3D 발사 장면. Three.js는 launch/ 안에서만 불러온다.
+// 동적 import를 써서 3D를 지원하지 않는 환경에서도 계산기 부분은 동작하게 한다.
+import('./launch/launchScene.js')
+  .then(({ createLaunchScene }) => {
+    const scene = createLaunchScene(document.getElementById('launch-scene'));
+    scene.start();
+    state.launchScene = scene;
+  })
+  .catch((error) => {
+    const box = document.getElementById('launch-scene');
+    box.textContent = `3D 장면을 불러오지 못했습니다: ${error.message}`;
+    console.error('3D 장면 오류', error);
+  });
+
 // 개발 중 확인용: 브라우저 콘솔에서 window.__state 로 현재 상태를 볼 수 있다
 window.__state = state;

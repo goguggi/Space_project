@@ -59,13 +59,22 @@
       <div id="survival-container"></div>
     </section>
 
-    <!-- 발사 시뮬레이션(10~15단계) 등 이후 구성 요소는 여기에 추가된다 -->
+    <!-- 10단계: 3D 발사 장면 (Three.js). 11단계부터 로켓과 발사 물리가 붙는다 -->
+    <section class="panel" id="launch-panel">
+      <h2>발사 장면 (3D)</h2>
+      <p class="field-label">마우스 드래그로 시점 회전, 휠로 확대·축소. 로켓은 11단계에서 추가됩니다.</p>
+      <div id="launch-scene" class="launch-scene"></div>
+    </section>
   </main>
 
   <footer class="app-footer">
-    <p>단계별 개발 중 · 현재 7단계(생물 비교) · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
+    <p>단계별 개발 중 · 현재 10단계(3D 장면) · <a href="tests/physics.test.html">계산 검증 페이지</a></p>
   </footer>
 
+  <!-- Three.js 부속 모듈(OrbitControls 등)이 'three'라는 이름으로 본체를 찾으므로 그 이름을 동봉 파일에 연결한다 -->
+  <script type="importmap">
+    { "imports": { "three": "./lib/three/three.module.js" } }
+  </script>
   <!-- ES 모듈 진입점. file:// 로 열면 동작하지 않으므로 로컬 서버로 연다 (docs/02_architecture.md 5절) -->
   <script type="module" src="src/main.js"></script>
 </body>
