@@ -49,3 +49,10 @@
 
 내보내는 함수: `getBodyVisual(id)`, `displayRadius(visual)`.
 외부 이미지를 쓰지 않고 캔버스로 텍스처를 만든다 (라이브러리·자산 동봉 원칙).
+
+## 18단계에서 추가된 것
+
+| 파일 | 내용 |
+|---|---|
+| `earthOutline.js` | 지구 대륙·사막의 아주 거친 윤곽 좌표 `[경도, 위도]`. 지구 표면 텍스처를 캔버스로 그릴 때 쓴다 (D-69) |
+| `celestialBodies.js` | 지구에 `landable`·`surfaceGravity: 9.81`·`reentry`·`landingStartAltitudeM: 80,000` 추가 (D-66) |

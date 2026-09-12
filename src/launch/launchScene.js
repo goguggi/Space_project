@@ -11,6 +11,7 @@
 import * as THREE from '../../lib/three/three.module.js';
 import { OrbitControls } from '../../lib/three/OrbitControls.js';
 import { EARTH_RADIUS } from '../data/constants.js';
+import { createEarthTexture, rotationForSite } from './earthTexture.js';
 
 // 표시 축척 상수. 로켓 높이(약 70 m)가 화면에서 약 7 단위가 되도록 1 단위 = 10 m
 export const SCENE_METERS_PER_UNIT = 10;
@@ -46,8 +47,12 @@ export function createLaunchScene(container) {
   // 지구 중심을 (0, -EARTH_DISPLAY_RADIUS, 0)에 두어 발사대 바닥(지표면)이 y = 0 이 되게 한다
   const surfaceY = 0;
   const earthGeometry = new THREE.SphereGeometry(EARTH_DISPLAY_RADIUS, 256, 256);
-  const earthMaterial = new THREE.MeshStandardMaterial({ color: 0x2f6f4e, roughness: 0.95, metalness: 0 });
+  // 18단계(D-69): 캔버스로 그린 지구 표면을 입힌다. 외부 이미지는 쓰지 않는다
+  const earthMaterial = new THREE.MeshStandardMaterial({
+    map: createEarthTexture(), roughness: 0.95, metalness: 0,
+  });
   const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+  earth.rotation.order = 'ZYX';
   earth.position.set(0, -EARTH_DISPLAY_RADIUS, 0);
   earth.receiveShadow = true;
   scene.add(earth);
@@ -59,6 +64,24 @@ export function createLaunchScene(container) {
   );
   atmosphere.position.copy(earth.position);
   scene.add(atmosphere);
+
+  // ---- 발사장 부지 (18단계) ----
+  // 지구 텍스처는 대륙 윤곽이 거칠어 발사대가 바다 위에 놓인 것처럼 보일 수 있다.
+  // 실제 발사 단지처럼 반지름 약 12 km의 지면을 지표에 깔아 항상 땅 위에서 뜨게 한다.
+  const siteGround = new THREE.Mesh(
+    new THREE.CircleGeometry(12_000 / SCENE_METERS_PER_UNIT, 64),
+    new THREE.MeshStandardMaterial({ color: 0x3b6b3f, roughness: 1 }),
+  );
+  siteGround.rotation.x = -Math.PI / 2;
+  siteGround.position.y = surfaceY + 0.05;
+  scene.add(siteGround);
+  const apron = new THREE.Mesh(
+    new THREE.CircleGeometry(700 / SCENE_METERS_PER_UNIT, 48),
+    new THREE.MeshStandardMaterial({ color: 0x8a8f9c, roughness: 0.95 }),
+  );
+  apron.rotation.x = -Math.PI / 2;
+  apron.position.y = surfaceY + 0.1;
+  scene.add(apron);
 
   // ---- 발사대 ----
   const launchPad = new THREE.Group();
@@ -165,5 +188,11 @@ export function createLaunchScene(container) {
     stop() { running = false; },
     onFrame(fn) { frameCallbacks.push(fn); },
     onAfterRender(fn) { afterRenderCallbacks.push(fn); },
+    /** 발사장 좌표가 발사대 자리(구의 꼭대기)에 오도록 지구를 돌린다 (18단계) */
+    setLaunchSite(site) {
+      const r = rotationForSite(site);
+      earth.rotation.y = r.y;
+      earth.rotation.z = r.z;
+    },
   };
 }

@@ -507,7 +507,7 @@ a { color: var(--color-accent); }
 .pip-view {
   position: absolute;
   left: 16px;
-  bottom: calc(var(--bar-height) + 92px);
+  bottom: calc(var(--bar-height) + 128px);
   width: 27%;
   min-width: 170px;
   max-width: 380px;
@@ -540,7 +540,7 @@ a { color: var(--color-accent); }
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(var(--bar-height) + 10px);
+  bottom: calc(var(--bar-height) + 46px);
   display: flex;
   gap: 10px;
   justify-content: center;
@@ -861,4 +861,177 @@ a { color: var(--color-accent); }
 
 @media (max-width: 900px) {
   .view-controls { right: 14px; top: 56px; flex-wrap: wrap; justify-content: flex-end; }
+}
+
+/* ── ⑩ 18단계: 로런츠 곡선 · 구간 칩 · 착륙 체크리스트 ─────────────── */
+
+/* 로런츠 인자 곡선 (R-4) */
+.lorentz-chart { margin-top: 10px; }
+
+.lorentz-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: rgba(6, 10, 20, 0.6);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.lz-grid { stroke: rgba(120, 145, 210, 0.18); stroke-width: 1; }
+.lz-curve { fill: none; stroke: var(--color-accent); stroke-width: 2; }
+.lz-guide { stroke: rgba(79, 209, 160, 0.55); stroke-width: 1; stroke-dasharray: 3 3; }
+.lz-dot { fill: var(--color-ship); stroke: #04070f; stroke-width: 1.5; }
+.lz-dot.over { fill: var(--color-warn); }
+.lz-xtick, .lz-ytick, .lz-axis { fill: var(--color-muted); font-size: 9px; }
+.lz-xtick { text-anchor: middle; }
+.lz-ytick { text-anchor: end; }
+
+.lorentz-readout {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 임무 구간 칩 (D-65) */
+.chapter-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 18px 4px;
+  pointer-events: auto;
+}
+
+.chapter-chip {
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  color: var(--color-text);
+  background: rgba(4, 7, 16, 0.72);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.chapter-chip:hover:not(:disabled) { border-color: var(--color-accent); }
+.chapter-chip:disabled { opacity: 0.35; cursor: default; }
+
+.chapter-chip.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #06101f;
+  font-weight: 700;
+}
+
+/* 착륙 절차 체크리스트 (D-67) */
+.checklist {
+  position: absolute;
+  left: 16px;
+  bottom: calc(var(--bar-height) + 46px);
+  width: min(300px, 44%);
+  padding: 10px 12px;
+  background: rgba(4, 7, 16, 0.66);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.checklist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.checklist-auto {
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  color: var(--color-text);
+  background: rgba(17, 23, 42, 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.checklist-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+
+.checklist-item {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  border: 1px solid transparent;
+  opacity: 0.55;
+}
+
+.checklist-item.active {
+  opacity: 1;
+  border-color: var(--color-accent);
+  background: rgba(111, 168, 255, 0.14);
+  animation: checklist-pulse 1.1s ease-in-out infinite;
+}
+
+.checklist-item.done { opacity: 1; }
+.checklist-item.done .checklist-state { color: var(--color-ship); }
+.checklist-item.missed { opacity: 1; }
+.checklist-item.missed .checklist-state { color: #ff6b6b; }
+
+@keyframes checklist-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(111, 168, 255, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(111, 168, 255, 0.22); }
+}
+
+.checklist-key {
+  width: 26px;
+  height: 22px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text);
+  background: rgba(17, 23, 42, 0.9);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.checklist-item.active .checklist-key { border-color: var(--color-accent); color: var(--color-accent); }
+.checklist-state { color: var(--color-muted); font-size: 0.7rem; }
+
+.checklist-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 0.78rem;
+}
+
+.grade-badge {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  border-radius: 10px;
+  background: var(--color-accent);
+  color: #06101f;
+}
+
+.checklist-result.grade-B .grade-badge { background: var(--color-ship); }
+.checklist-result.grade-C .grade-badge { background: var(--color-warn); }
+.checklist-result.grade-D .grade-badge { background: #ff6b6b; }
+.grade-notes { color: var(--color-muted); font-size: 0.72rem; margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .checklist { width: min(260px, 60%); bottom: calc(var(--bar-height) + 80px); }
+  .chapter-row { padding: 0 10px 4px; }
 }

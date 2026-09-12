@@ -60,3 +60,11 @@
 | `lifespanChart.js` | 행 DOM을 한 번만 만들고 `setResult(result, ages)`로 눈금을, `setProgress(p)`로 막대 길이만 바꾼다. 진행에 따라 생존→사망 표시가 실시간으로 바뀐다 (D-55) |
 | `stopwatch.js` | 스스로 애니메이션하지 않는다. `setTimes(지구초, 우주선초)`와 `setStatus(글)`로 임무 시계가 값을 넣어 준다 |
 | `survivalIcons.js` | 그대로. `main.js`가 매 시점의 경과 시간으로 다시 판정해 넘긴다 |
+
+## 18단계에서 추가된 것
+
+| 파일 | 내용 |
+|---|---|
+| `lorentzChart.js` | γ = 1/√(1−β²) 곡선을 SVG로 그리고, 지금 속도를 곡선 위의 점으로 표시한다. 속도 슬라이더와 연동 (R-4) |
+| `missionChapters.js` | 진행 바 위의 구간 칩. 누르면 그 장면이 바로 재생된다 (D-65) |
+| `landingChecklist.js` | 착륙 절차 체크리스트. 지금 할 일을 강조하고 버튼·단축키(Z X C V)로 수행받는다. 끝나면 등급 A~D를 보여준다 (D-67) |

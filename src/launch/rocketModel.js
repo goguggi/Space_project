@@ -7,10 +7,31 @@ import { SCENE_METERS_PER_UNIT } from './launchScene.js';
 
 const S = SCENE_METERS_PER_UNIT;
 
-const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xe8ecf7, roughness: 0.5, metalness: 0.1 });
-const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x2a3557, roughness: 0.7 });
+// ---- 재질 (18단계, R-9: 실제 팔콘 헤비에 가깝게) ----
+// 흰 도장 + 검은 인터스테이지 + 금속 노즐. 표면 명암은 캔버스로 만든 세로 줄무늬 텍스처로 낸다.
+function makeHullTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 8;
+  const ctx = canvas.getContext('2d');
+  for (let x = 0; x < 64; x += 1) {
+    // 원통을 감았을 때 옆면이 어둡게 보이도록 좌우로 밝기를 준다
+    const shade = 0.72 + 0.28 * Math.sin((x / 64) * Math.PI * 2 + Math.PI / 2);
+    const v = Math.round(232 * shade);
+    ctx.fillStyle = `rgb(${v},${v + 3},${Math.min(255, v + 12)})`;
+    ctx.fillRect(x, 0, 1, 8);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+const bodyMaterial = new THREE.MeshStandardMaterial({ map: makeHullTexture(), roughness: 0.45, metalness: 0.12 });
+const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x1b2033, roughness: 0.85, metalness: 0.05 });
+const metalMaterial = new THREE.MeshStandardMaterial({ color: 0x8d94a6, roughness: 0.35, metalness: 0.85 });
+const sootMaterial = new THREE.MeshStandardMaterial({ color: 0x14161d, roughness: 0.95 });
 const flameMaterial = new THREE.MeshBasicMaterial({ color: 0xffa64d, transparent: true, opacity: 0.85 });
-const flameCoreMaterial = new THREE.MeshBasicMaterial({ color: 0xfff1c0, transparent: true, opacity: 0.9 });
+const flameCoreMaterial = new THREE.MeshBasicMaterial({ color: 0x9fd8ff, transparent: true, opacity: 0.95 });
 
 function makePart(part) {
   const [w, h] = part.size;
@@ -18,11 +39,51 @@ function makePart(part) {
   if (part.type === 'fairing') {
     mesh = new THREE.Mesh(new THREE.ConeGeometry((w / 2) / S, h / S, 24), bodyMaterial);
   } else {
-    mesh = new THREE.Mesh(new THREE.CylinderGeometry((w / 2) / S, (w / 2) / S, h / S, 24), bodyMaterial);
-    // 아래쪽 엔진부 표시
-    const skirt = new THREE.Mesh(new THREE.CylinderGeometry((w / 2) / S, (w / 2) / S, 1.5 / S, 24), darkMaterial);
-    skirt.position.y = -(h / 2) / S + 0.75 / S;
+    mesh = new THREE.Mesh(new THREE.CylinderGeometry((w / 2) / S, (w / 2) / S, h / S, 32), bodyMaterial);
+    const radius = (w / 2) / S;
+    const half = (h / 2) / S;
+
+    // 아래쪽 엔진 스커트 (그을음 색)
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.02, radius * 1.05, 2.4 / S, 32), sootMaterial);
+    skirt.position.y = -half + 1.2 / S;
     mesh.add(skirt);
+
+    // 노즐 여러 개 (팔콘 헤비 1단은 멀린 9기: 가운데 1 + 둘레 8)
+    const nozzle = () => new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * 0.13, radius * 0.2, 1.8 / S, 12),
+      metalMaterial,
+    );
+    const center = nozzle();
+    center.position.y = -half - 0.7 / S;
+    mesh.add(center);
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * Math.PI * 2;
+      const n = nozzle();
+      n.position.set(Math.cos(a) * radius * 0.6, -half - 0.6 / S, Math.sin(a) * radius * 0.6);
+      mesh.add(n);
+    }
+
+    // 위쪽 인터스테이지 (검은 띠)
+    const inter = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.01, radius * 1.01, 3.2 / S, 32), darkMaterial);
+    inter.position.y = half - 1.6 / S;
+    mesh.add(inter);
+
+    // 격자 날개 (그리드 핀) — 위쪽 바깥으로 네 장
+    for (let i = 0; i < 4; i += 1) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(1.6 / S, 2.2 / S, 0.25 / S), metalMaterial);
+      fin.position.set(Math.cos(a) * radius * 1.12, half - 4.6 / S, Math.sin(a) * radius * 1.12);
+      fin.rotation.y = -a;
+      mesh.add(fin);
+    }
+
+    // 착륙 다리 (접힌 상태로 아래쪽에 붙어 있다)
+    for (let i = 0; i < 4; i += 1) {
+      const a = (i / 4) * Math.PI * 2;
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.5 / S, 6.5 / S, 0.5 / S), darkMaterial);
+      leg.position.set(Math.cos(a) * radius * 1.03, -half + 5 / S, Math.sin(a) * radius * 1.03);
+      mesh.add(leg);
+    }
   }
   mesh.position.set(part.position[0] / S, part.position[1] / S, part.position[2] / S);
   mesh.rotation.set(part.rotation[0], part.rotation[1], part.rotation[2]);
@@ -31,14 +92,26 @@ function makePart(part) {
 
 function makeFlame(diameterM) {
   const group = new THREE.Group();
-  const outer = new THREE.Mesh(new THREE.ConeGeometry((diameterM * 0.45) / S, (diameterM * 3) / S, 16), flameMaterial);
+  // 바깥 주황 불꽃
+  const outer = new THREE.Mesh(new THREE.ConeGeometry((diameterM * 0.5) / S, (diameterM * 3.6) / S, 20), flameMaterial);
   outer.rotation.x = Math.PI;
-  outer.position.y = -(diameterM * 1.5) / S;
-  const inner = new THREE.Mesh(new THREE.ConeGeometry((diameterM * 0.25) / S, (diameterM * 2) / S, 16), flameCoreMaterial);
+  outer.position.y = -(diameterM * 1.8) / S;
+  // 안쪽 파란 심
+  const inner = new THREE.Mesh(new THREE.ConeGeometry((diameterM * 0.22) / S, (diameterM * 2.2) / S, 20), flameCoreMaterial);
   inner.rotation.x = Math.PI;
-  inner.position.y = -(diameterM * 1.0) / S;
+  inner.position.y = -(diameterM * 1.1) / S;
   group.add(outer);
   group.add(inner);
+  // 마하 디스크: 배기 흐름에 생기는 밝은 마디 세 개
+  for (let i = 0; i < 3; i += 1) {
+    const disk = new THREE.Mesh(
+      new THREE.SphereGeometry((diameterM * (0.16 - i * 0.03)) / S, 12, 8),
+      new THREE.MeshBasicMaterial({ color: 0xfff1c0, transparent: true, opacity: 0.55 - i * 0.12 }),
+    );
+    disk.scale.y = 0.45;
+    disk.position.y = -(diameterM * (0.9 + i * 0.7)) / S;
+    group.add(disk);
+  }
   group.visible = false;
   return group;
 }

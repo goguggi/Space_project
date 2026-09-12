@@ -14,8 +14,11 @@ export const CELESTIAL_BODIES = {
   // ---- 출발지 ----
   earth: {
     name: '지구', kind: 'planet', radiusM: 6_371 * KM,
-    color: 0x2f6f4e, atmosphere: 0x4a8fe0, glow: 0,
-    source: 'IAU 평균 반지름 6,371 km',
+    color: 0x2f6f43, atmosphere: 0x4a8fe0, glow: 0,
+    // 18단계(D-66): 왕복의 마지막에 지구로 돌아와 내려앉는다
+    landable: true, surfaceGravity: 9.81, reentry: true,
+    landingStartAltitudeM: 80_000,   // 재진입 시작 고도 (카르만 선 위)
+    source: 'IAU 평균 반지름 6,371 km / 표준 중력 9.81 m/s²',
   },
 
   // ---- 태양계 ----

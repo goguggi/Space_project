@@ -17,6 +17,7 @@ import * as THREE from '../../lib/three/three.module.js';
 import { OrbitControls } from '../../lib/three/OrbitControls.js';
 import { angularRadius, dopplerFactor, aberratedAngle } from '../physics/journey.js';
 import { displayRadius } from '../data/celestialBodies.js';
+import { createCockpit } from './cockpit.js';
 
 // 카메라에서 천체까지의 화면상 거리 (화면 단위). 이 거리에 겉보기 크기를 맞춘다
 const VIEW_DISTANCE = 1_000;
@@ -405,6 +406,56 @@ export function createCruiseScene(container) {
   routeLine.visible = false;
   scene.add(routeLine);
 
+  // ---- 조종석과 자세 조종 (18단계, D-68 · D-70) ----
+  const cockpit = createCockpit(camera);
+  scene.add(camera);   // 조종석이 카메라의 자식이므로 카메라를 장면에 넣어야 그려진다
+
+  const YAW_LIMIT = (120 * Math.PI) / 180;
+  const PITCH_LIMIT = (70 * Math.PI) / 180;
+  const AIM_CONE = (7 * Math.PI) / 180;   // 조준선 안으로 볼 각도
+  const attitude = { yaw: 0, pitch: 0 };
+  let onTarget = true;
+  const forward = new THREE.Vector3();
+  const toTargetDir = new THREE.Vector3(0, 0, 1);
+
+  const clampAttitude = () => {
+    attitude.yaw = Math.max(-YAW_LIMIT, Math.min(YAW_LIMIT, attitude.yaw));
+    attitude.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, attitude.pitch));
+  };
+
+  /** 1인칭에서 카메라 방향을 자세값으로 정한다. 카메라는 기본으로 −Z를 보므로 Y를 π 돌려 +Z를 보게 한다 */
+  function applyAttitude() {
+    camera.rotation.order = 'YXZ';
+    camera.rotation.set(attitude.pitch, Math.PI + attitude.yaw, 0);
+    forward.set(0, 0, -1).applyQuaternion(camera.quaternion);
+    onTarget = forward.angleTo(toTargetDir) < AIM_CONE;
+  }
+
+  // 키보드: WASD / 방향키로 자세, R로 정면 복귀
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    const k = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+      keys.add(k);
+      if (viewMode === 'first') e.preventDefault();
+    }
+    if (k === 'r') { attitude.yaw = 0; attitude.pitch = 0; applyAttitude(); }
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+
+  function stepAttitude(dt) {
+    if (viewMode !== 'first') return;
+    const rate = 1.1 * dt;   // rad/s
+    if (keys.has('a') || keys.has('arrowleft')) attitude.yaw += rate;
+    if (keys.has('d') || keys.has('arrowright')) attitude.yaw -= rate;
+    if (keys.has('w') || keys.has('arrowup')) attitude.pitch += rate;
+    if (keys.has('s') || keys.has('arrowdown')) attitude.pitch -= rate;
+    clampAttitude();
+    applyAttitude();
+  }
+
   // ---- 시점 모드 (17단계, D-58) ----
   // first 조종석 · third 우주선 뒤 · wide 지구·우주선·목적지를 한 화면에
   let viewMode = 'third';
@@ -413,16 +464,18 @@ export function createCruiseScene(container) {
 
   function setCameraMode(id) {
     viewMode = id === 'first' || id === 'wide' ? id : 'third';
+    cockpit.setVisible(viewMode === 'first');
+    controls.enabled = viewMode !== 'first';
     if (viewMode === 'first') {
-      camera.fov = 74;
-      camera.position.set(0, 0, 18);
-      controls.target.set(0, 0, 600);
-      controls.minDistance = 4;
-      controls.maxDistance = 1_200;
+      // 조종석 안: 카메라가 곧 조종사의 눈. OrbitControls 대신 자세값으로 방향을 정한다 (D-70)
+      camera.fov = 76;
+      camera.position.set(0, 0, 0);
       ship.visible = false;
       routeLine.visible = false;
+      applyAttitude();
     } else if (viewMode === 'wide') {
       camera.fov = 52;
+      camera.rotation.set(0, 0, 0);
       camera.position.set(-2_600, 780, 0);   // 목적지(+Z)가 화면 오른쪽에 오도록 반대편에서 본다
       controls.target.set(0, 0, 0);
       controls.minDistance = 600;
@@ -431,6 +484,7 @@ export function createCruiseScene(container) {
       routeLine.visible = true;
     } else {
       camera.fov = 55;
+      camera.rotation.set(0, 0, 0);
       camera.position.set(0, 3, -26);
       controls.target.set(0, 0, 40);
       controls.minDistance = 8;
@@ -492,15 +546,19 @@ export function createCruiseScene(container) {
   }
   window.addEventListener('resize', resize);
 
-  function loop() {
+  let lastFrame = 0;
+  function loop(now) {
     if (!running) return;
     requestAnimationFrame(loop);
+    const dt = lastFrame ? Math.min((now - lastFrame) / 1000, 0.1) : 0;
+    lastFrame = now;
+    stepAttitude(dt);
     spin += 0.0016;
     if (targetModel) targetModel.rotation.y = spin;
     if (earthModel) earthModel.rotation.y = -spin * 0.7;
     if (viewMode !== 'wide') ship.position.y = -3.2 + Math.sin(spin * 12) * 0.06;
     for (const fn of frameCallbacks) fn();
-    controls.update();
+    if (controls.enabled) controls.update();
     renderer.render(scene, camera);
   }
 
@@ -530,6 +588,11 @@ export function createCruiseScene(container) {
     onFrame(fn) { frameCallbacks.push(fn); },
     setCameraMode,
     get cameraMode() { return viewMode; },
+    /** 조종석 계기판 내용 (18단계) */
+    setCockpitReadout(info) { cockpit.setReadout({ ...info, onTarget }); },
+    /** 목적지가 조준선 안에 있는가 (D-68 보너스 판정) */
+    get onTarget() { return onTarget; },
+    resetAttitude() { attitude.yaw = 0; attitude.pitch = 0; applyAttitude(); },
     show() {
       renderer.domElement.style.display = 'block';
       resize();

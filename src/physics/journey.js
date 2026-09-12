@@ -21,13 +21,35 @@ const LOG_MIN = 0;
 const LOG_MAX = 19;
 
 /**
- * 결과 시간(초)에 따라 재생 길이(ms)를 정한다.
+ * 결과 시간(초)에 따라 재생 길이(ms)를 정한다. (15단계 규칙, 18단계부터는 아래 거리 기준을 쓴다)
  * @param {number} totalSeconds  지구에서 흐른 시간
  */
 export function animationDurationMs(totalSeconds) {
   const log = Math.log10(Math.max(totalSeconds, 1));
   const t = clamp01((log - LOG_MIN) / (LOG_MAX - LOG_MIN));
   return MIN_DURATION_MS + t * (MAX_DURATION_MS - MIN_DURATION_MS);
+}
+
+// ---- 18단계 (D-63): 항행 재생 시간은 "거리"로 정한다 ----
+// 지구 시간으로 정하면 같은 목적지도 속도에 따라 재생 시간이 달라져 거리 비교가 안 된다.
+// 거리의 로그에 비례해 달 5초 ~ 안드로메다 60초 사이로 늘린다. 목적지마다 값이 고정된다.
+export const TRAVEL_MIN_SECONDS = 5;
+export const TRAVEL_MAX_SECONDS = 60;
+const NEAREST_DISTANCE_M = 3.844e8;      // 달까지의 평균 거리
+const FARTHEST_DISTANCE_M = 2.4e22;      // 안드로메다 은하까지의 거리
+
+/**
+ * 목적지까지의 재생 시간 (초).
+ * @param {number} distanceM  편도 거리 (m)
+ * @param {boolean} roundTrip  왕복이면 2배
+ */
+export function travelDurationSeconds(distanceM, roundTrip = false) {
+  const d = Math.max(distanceM, 1);
+  const lo = Math.log10(NEAREST_DISTANCE_M);
+  const hi = Math.log10(FARTHEST_DISTANCE_M);
+  const t = clamp01((Math.log10(d) - lo) / (hi - lo));
+  const seconds = TRAVEL_MIN_SECONDS + t * (TRAVEL_MAX_SECONDS - TRAVEL_MIN_SECONDS);
+  return roundTrip ? seconds * 2 : seconds;
 }
 
 /**

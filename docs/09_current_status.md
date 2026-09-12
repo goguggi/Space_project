@@ -12,10 +12,10 @@
 |---|---|
 | 저장소 | https://github.com/goguggi/Space_project (main 브랜치) |
 | 게시 사이트 | https://goguggi.github.io/Space_project/ (GitHub Pages, main 루트, 푸시하면 1~2분 뒤 자동 갱신) |
-| 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 17 |
+| 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 17, 18 |
 | 진행 중 | 없음. 다음은 **16단계 (설계한 로켓 불러오기)** |
 | 남은 단계 | 16 → 8 → 9 (순서는 [04_roadmap.md](04_roadmap.md)) |
-| 검증 | `tests/physics.test.html` 58 / 58 통과 |
+| 검증 | `tests/physics.test.html` 83 / 83 통과 |
 
 ## 2. 완료된 것
 
@@ -36,6 +36,7 @@
 | 14 | 화면 분할: 착륙 장면 보조 화면(왼쪽 아래 인셋), 착륙 대상 자동 전환, 아래쪽 두 칸 텔레메트리 바 | `src/launch/pipView.js`, `landingTarget.js`, `launchHud.js` |
 | 15 | 우주 항행 장면(천체 12개, 광행차·도플러), 전체 화면 배치와 제어 패널, 임무 시계로 3D·스톱워치·막대 그래프·생존 표 실시간 연동 | `src/launch/cruiseScene.js`, `cruiseHud.js`, `src/physics/journey.js`, `src/data/celestialBodies.js`, `src/ui/missionBar.js` |
 | 17 | 시점 전환(1인칭·3인칭·광역), Web Audio 배경음악·효과음, 발사장 구글지도, 달·화성 착륙씬, 왕복 연출 | `src/ui/viewControls.js`, `launchSiteMap.js`, `src/audio/spaceAudio.js`, `src/launch/landingScene.js`, `landingHud.js` |
+| 18 | 지구 재착륙, 구간 클릭 재생, 발사 단축(5배속+자동 전환), 로런츠 곡선, 조종석 1인칭과 자세 조종, 거리 기준 재생 시간(5~60초), KSP식 착륙 절차와 등급, 캔버스 지구 표면, 현실감 있는 로켓 | `src/physics/missionTimeline.js`, `landingMission.js`, `src/ui/lorentzChart.js`, `missionChapters.js`, `landingChecklist.js`, `src/launch/cockpit.js`, `earthTexture.js`, `src/data/earthOutline.js` |
 | 기능 2 계획 | 로켓 설계 프로그램 인수 문서, JSON 계약 예제 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md), `docs/examples/falcon_heavy.rocket.json` |
 
 ## 3. 다음 할 일: 16단계 설계한 로켓 불러오기 (아직 시작 안 함)
@@ -43,6 +44,13 @@
 [04_roadmap.md](04_roadmap.md) 16단계, 계약은 [08_rocket_design_handoff.md](08_rocket_design_handoff.md)와 `docs/examples/falcon_heavy.rocket.json`.
 - 설계 프로그램이 낸 JSON을 읽어 `state.rocketSpec`으로 쓴다. 발사 물리는 처음부터 그 형식(`stages[]`)이므로 파일만 갈아 끼우면 된다.
 - 미결: 설계 저장소 주소(Q-23), 부품 목록 주체(Q-21).
+
+18단계에서 알게 된 것:
+- 재생 시간을 "지구 시간"이 아니라 "거리"로 정하니 목적지마다 값이 고정되어 거리 차이가 훨씬 잘 느껴진다 (D-63).
+- 착륙 연출에 임무 배속을 그대로 곱하면 5배속에서 2초 만에 끝나 절차를 누를 틈이 없다. 착륙은 2배까지만 적용한다.
+- 조종석은 카메라의 자식으로 붙이되, 카메라를 `scene.add(camera)` 해야 그려진다.
+- 착륙 1인칭에서 똑바로 아래만 보면 지면만 가득 차 화면이 하얘진다. 앞아래 35°쯤을 보게 했다.
+- 지구 텍스처의 대륙 윤곽이 거칠어 발사대가 바다 위에 놓일 수 있다. 발사 단지 지면(반지름 12 km)을 따로 깔아 해결했다.
 
 17단계에서 알게 된 것:
 - 시점을 바꿀 때 천체 크기를 다시 잡지 않으면 광역 시점의 크기가 남아 1인칭에서 화성이 코앞에 있는 것처럼 보인다. `refreshBodies()`가 마지막 진행 상태로 다시 계산한다.
@@ -75,7 +83,7 @@
 1. 이 문서와 [04_roadmap.md](04_roadmap.md)의 다음 단계, [06_decisions.md](06_decisions.md)의 결정·미결 질문을 읽는다.
 2. 환경 확인: `git config user.name`이 비어 있으면 커밋 명령에 `-c user.name="genai06" -c user.email="genai06@cdsai.kr"`를 붙인다. PowerShell·Python·Node 중 무엇이 있는지 확인한다.
 3. 로컬 서버를 띄운다. `.claude/launch.json`의 `local-server`(PowerShell 스크립트 `tools/serve.ps1`)를 쓰고, PowerShell이 없으면 `python -m http.server 8000`으로 바꿔 `launch.json`을 고친다.
-4. http://localhost:8000/tests/physics.test.html 에서 "58 / 58 통과"를 확인한다.
+4. http://localhost:8000/tests/physics.test.html 에서 "83 / 83 통과"를 확인한다.
 5. 3절의 다음 단계(16단계)를 구현한다. 완료 조건을 만족하면 커밋·푸시하고 이 문서를 갱신한다.
 6. 푸시 시 GitHub 로그인 창이 뜨면 사용자에게 로그인만 요청한다.
 

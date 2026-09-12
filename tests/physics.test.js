@@ -11,6 +11,10 @@ import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.j
 import { journeyAt, angularRadius, dopplerFactor, aberratedAngle, beta } from '../src/physics/journey.js';
 import { descentProfile } from '../src/physics/landingGuidance.js';
 import { CELESTIAL_BODIES, isLandable } from '../src/data/celestialBodies.js';
+import { travelDurationSeconds } from '../src/physics/journey.js';
+import { missionChapters, currentChapter } from '../src/physics/missionTimeline.js';
+import { LANDING_STEPS, activeStep, missedSteps, descentPenalty, landingGrade, aimBonus } from '../src/physics/landingMission.js';
+import { DESTINATIONS } from '../src/data/destinations.js';
 import { STANDARD_GRAVITY, EARTH_RADIUS } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
@@ -169,6 +173,54 @@ cases.push(['착륙 불가: 안드로메다 (은하, 1 = 그렇다)', 1, isLanda
 // 화성은 중력이 커서 같은 높이를 더 빨리 내려온다
 cases.push(['착륙: 화성 하강 시간 < 달 (1 = 그렇다)', 1,
   descentProfile(0, 2000, CELESTIAL_BODIES.mars.surfaceGravity).duration < dStart.duration ? 1 : 0, 1e-9]);
+
+// ---- 18단계: 재생 시간은 거리로 정한다 (D-63) ----
+const moonD = DESTINATIONS.find((d) => d.id === 'moon').distance;
+const androD = DESTINATIONS.find((d) => d.id === 'andromeda').distance;
+cases.push(['재생 시간: 달 = 5초', 5, travelDurationSeconds(moonD), 1e-3]);
+cases.push(['재생 시간: 안드로메다 = 60초', 60, travelDurationSeconds(androD), 1e-3]);
+cases.push(['재생 시간: 왕복은 2배 (달, s)', 10, travelDurationSeconds(moonD, true), 1e-3]);
+const marsD = DESTINATIONS.find((d) => d.id === 'mars').distance;
+cases.push(['재생 시간: 거리가 멀수록 길다 (1 = 그렇다)', 1,
+  travelDurationSeconds(marsD) > travelDurationSeconds(moonD) && travelDurationSeconds(androD) > travelDurationSeconds(marsD) ? 1 : 0, 1e-9]);
+cases.push(['재생 시간: 5~60초 범위 안 (1 = 그렇다)', 1,
+  DESTINATIONS.every((d) => travelDurationSeconds(d.distance) >= 5 && travelDurationSeconds(d.distance) <= 60) ? 1 : 0, 1e-9]);
+
+// ---- 18단계: 임무 구간 (D-65) ----
+const chRound = missionChapters({ roundTrip: true, landable: true, targetName: '달' });
+const chOne = missionChapters({ roundTrip: false, landable: false, targetName: '태양' });
+cases.push(['구간: 항상 6개', 6, chRound.length, 1e-9]);
+cases.push(['구간: 왕복이면 귀환·재착륙 사용 가능 (1 = 그렇다)', 1,
+  chRound.find((c) => c.id === 'return').enabled && chRound.find((c) => c.id === 'reentry').enabled ? 1 : 0, 1e-9]);
+cases.push(['구간: 편도면 귀환·재착륙 잠김 (1 = 그렇다)', 1,
+  !chOne.find((c) => c.id === 'return').enabled && !chOne.find((c) => c.id === 'reentry').enabled ? 1 : 0, 1e-9]);
+cases.push(['구간: 왕복 목적지 도달 지점 = 0.5', 0.5, chRound.find((c) => c.id === 'target').at, 1e-9]);
+cases.push(['구간: 편도 목적지 도달 지점 = 1', 1, chOne.find((c) => c.id === 'target').at, 1e-9]);
+cases.push(['구간 판정: 항행 30%는 outbound (1 = 그렇다)', 1,
+  currentChapter(chRound, { phase: 'cruise', progress: 0.3, visitedTarget: false }) === 'outbound' ? 1 : 0, 1e-9]);
+cases.push(['구간 판정: 반환 후 70%는 return (1 = 그렇다)', 1,
+  currentChapter(chRound, { phase: 'cruise', progress: 0.7, visitedTarget: true }) === 'return' ? 1 : 0, 1e-9]);
+cases.push(['구간 판정: 착륙 중은 target (1 = 그렇다)', 1,
+  currentChapter(chRound, { phase: 'landing', progress: 0.5, visitedTarget: true }) === 'target' ? 1 : 0, 1e-9]);
+
+// ---- 18단계: 착륙 절차와 등급 (D-67) ----
+cases.push(['절차: 4개', 4, LANDING_STEPS.length, 1e-9]);
+cases.push(['절차: 고도 1,500 m에서 할 일은 감속 연소 (1 = 그렇다)', 1,
+  activeStep(1500, {})?.id === 'burn' ? 1 : 0, 1e-9]);
+cases.push(['절차: 감속 연소를 했으면 다음은 다리 펴기 (1 = 그렇다)', 1,
+  activeStep(800, { burn: true })?.id === 'legs' ? 1 : 0, 1e-9]);
+cases.push(['절차: 고도 50 m에서 다리를 안 폈으면 놓침 (1 = 그렇다)', 1,
+  missedSteps(50, { burn: true }).some((s) => s.id === 'legs') ? 1 : 0, 1e-9]);
+cases.push(['절차: 감속 연소를 안 하면 더 빨리 떨어진다', 1.8, descentPenalty({}).descentScale, 1e-9]);
+cases.push(['절차: 감속 연소를 하면 정상 속도', 1, descentPenalty({ burn: true }).descentScale, 1e-9]);
+const gradeA = landingGrade({ burn: true, legs: true, final: true, shutdown: true }, 1.5);
+const gradeD = landingGrade({}, 11);
+cases.push(['등급: 모두 수행 + 1.5 m/s → 100점', 100, gradeA.score, 1e-9]);
+cases.push(['등급: 모두 수행 + 1.5 m/s → A (1 = 그렇다)', 1, gradeA.grade === 'A' ? 1 : 0, 1e-9]);
+cases.push(['등급: 아무것도 안 함 + 11 m/s → D (1 = 그렇다)', 1, gradeD.grade === 'D' ? 1 : 0, 1e-9]);
+cases.push(['등급: 점수는 0~100 (1 = 그렇다)', 1, gradeD.score >= 0 && gradeD.score <= 100 ? 1 : 0, 1e-9]);
+cases.push(['조준 보너스: 절반 유지 = 10점', 10, aimBonus(5, 10).bonus, 1e-9]);
+cases.push(['조준 보너스: 계속 유지 = 20점', 20, aimBonus(10, 10).bonus, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');

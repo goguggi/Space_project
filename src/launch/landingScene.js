@@ -26,7 +26,9 @@ function createLander() {
   );
   nose.position.y = 12.7;
   g.add(nose);
-  // 착륙 다리 네 개
+  // 착륙 다리 네 개. 처음에는 접혀 있고, 절차를 수행하면 펼쳐진다 (D-67)
+  g.userData.legs = [];
+  g.userData.pads = [];
   for (let i = 0; i < 4; i += 1) {
     const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
     const leg = new THREE.Mesh(
@@ -34,15 +36,20 @@ function createLander() {
       new THREE.MeshStandardMaterial({ color: 0x2a3557, roughness: 0.7 }),
     );
     leg.position.set(Math.cos(angle) * 2.4, 2.4, Math.sin(angle) * 2.4);
-    leg.rotation.z = Math.cos(angle) * 0.42;
-    leg.rotation.x = -Math.sin(angle) * 0.42;
+    const openZ = Math.cos(angle) * 0.42;
+    const openX = -Math.sin(angle) * 0.42;
+    leg.rotation.z = 0;
+    leg.rotation.x = 0;
     g.add(leg);
+    g.userData.legs.push({ mesh: leg, openZ, openX, closedZ: 0, closedX: 0 });
     const pad = new THREE.Mesh(
       new THREE.CylinderGeometry(0.8, 0.8, 0.25, 12),
       new THREE.MeshStandardMaterial({ color: 0x3a4670, roughness: 0.8 }),
     );
     pad.position.set(Math.cos(angle) * 3.6, 0.25, Math.sin(angle) * 3.6);
+    pad.visible = false;
     g.add(pad);
+    g.userData.pads.push(pad);
   }
   const flame = new THREE.Mesh(
     new THREE.ConeGeometry(1.5, 8, 18),
@@ -52,6 +59,15 @@ function createLander() {
   flame.position.y = -2.2;
   g.add(flame);
   g.userData.flame = flame;
+
+  // 재진입 불꽃 (D-66): 대기와 부딪혀 아래쪽이 주황빛으로 달아오른다
+  const heat = new THREE.Mesh(
+    new THREE.SphereGeometry(4.2, 20, 14, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.55),
+    new THREE.MeshBasicMaterial({ color: 0xff7a33, transparent: true, opacity: 0.0, side: THREE.DoubleSide }),
+  );
+  heat.position.y = 1.4;
+  g.add(heat);
+  g.userData.heat = heat;
   return g;
 }
 
@@ -76,10 +92,10 @@ export function createLandingScene(container) {
   controls.minDistance = 8;
   controls.maxDistance = 2_000;
 
-  const sun = new THREE.DirectionalLight(0xfff4e0, 2.6);
+  const sun = new THREE.DirectionalLight(0xfff4e0, 1.7);
   sun.position.set(300, 500, -200);
   scene.add(sun);
-  const ambient = new THREE.HemisphereLight(0x8fb8ff, 0x241a12, 0.5);
+  const ambient = new THREE.HemisphereLight(0x8fb8ff, 0x241a12, 0.35);
   scene.add(ambient);
 
   // ---- 지표 ----
@@ -134,8 +150,11 @@ export function createLandingScene(container) {
 
   const lander = createLander();
   scene.add(lander);
+  const legs = lander.userData.legs;
+  const pads = lander.userData.pads;
 
   let bodyName = '목적지';
+  let hasAtmosphere = false;
   let viewMode = 'third';
   let altitude = 0;
 
@@ -144,19 +163,20 @@ export function createLandingScene(container) {
     groundMaterial.color.set(visual.color ?? 0x8a8f9c);
     rebuildRocks(visual.color ?? 0x8a8f9c);
     const hasAir = Boolean(visual.atmosphere) && visual.kind !== 'star';
+    hasAtmosphere = hasAir;
     sky.material.color.set(visual.atmosphere ?? 0x000000);
     sky.material.opacity = hasAir ? 0.35 : 0;
     stars.visible = !hasAir;
-    scene.background = new THREE.Color(hasAir ? 0x2a1a14 : 0x05070f);
+    scene.background = new THREE.Color(hasAir ? (visual.reentry ? 0x0a1a3a : 0x2a1a14) : 0x05070f);
   }
 
   function placeCamera() {
     const h = altitude;
     if (viewMode === 'first') {
-      // 조종석에서 아래를 내려다본다
-      camera.fov = 78;
-      camera.position.set(0, h + 12, 0.01);
-      controls.target.set(0, h - 60, 0);
+      // 조종석에서 앞아래를 내려다본다. 똑바로 아래만 보면 지면만 가득 차 하얗게 보인다
+      camera.fov = 76;
+      camera.position.set(0, h + 11, 0);
+      controls.target.set(90, h - 34, 0);
     } else if (viewMode === 'wide') {
       camera.fov = 55;
       camera.position.set(320, Math.max(h * 0.9, 60) + 120, 320);
@@ -178,7 +198,7 @@ export function createLandingScene(container) {
   }
 
   /**
-   * @param {{ altitude: number, speed: number, thrust: number }} descent
+   * @param {{ altitude: number, speed: number, thrust: number, legsOut?: boolean, reentry?: boolean }} descent
    */
   function setDescent(descent) {
     altitude = Math.max(descent.altitude, 0);
@@ -188,6 +208,24 @@ export function createLandingScene(container) {
       flame.visible = descent.thrust > 0.01;
       flame.scale.setScalar(0.4 + descent.thrust * 1.3);
       flame.material.opacity = 0.35 + descent.thrust * 0.5;
+    }
+    // 착륙 다리: 절차를 수행하기 전에는 접혀 있다 (D-67)
+    for (const leg of legs) {
+      leg.mesh.rotation.z = descent.legsOut ? leg.openZ : leg.closedZ;
+      leg.mesh.rotation.x = descent.legsOut ? leg.openX : leg.closedX;
+    }
+    for (const pad of pads) pad.visible = Boolean(descent.legsOut);
+    // 재진입 불꽃: 고도 80~30 km 구간에서 가장 밝다 (D-66)
+    const heat = lander.userData.heat;
+    if (heat) {
+      const on = descent.reentry && altitude > 25_000;
+      heat.material.opacity = on ? Math.min(0.85, (altitude - 25_000) / 55_000 + 0.15) : 0;
+    }
+    // 하늘: 대기가 있는 천체는 고도가 낮아질수록 진해진다
+    if (hasAtmosphere) {
+      const t = Math.min(altitude / 40_000, 1);
+      sky.material.opacity = 0.55 * (1 - t) + 0.1;
+      stars.visible = t > 0.35;
     }
     placeCamera();
   }

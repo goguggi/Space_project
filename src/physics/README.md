@@ -44,3 +44,12 @@
 | `beta(speed)`, `animationDurationMs(seconds)` | v/c, 재생 길이 3~15초 (6단계 규칙을 여기로 옮김) |
 
 검증: `tests/physics.test.js`의 항행 항목 12개.
+
+## 18단계에서 추가된 것
+
+| 파일 / 함수 | 내용 |
+|---|---|
+| `journey.js`의 `travelDurationSeconds(distance, roundTrip)` | 항행 재생 시간을 **거리**로 정한다. 달 5초 ~ 안드로메다 60초, 왕복은 ×2 (D-63) |
+| `missionTimeline.js` | 임무를 6구간(발사·궤도 진입·항행·목적지·귀환·지구 재착륙)으로 나눈다. `missionChapters(옵션)`, `currentChapter(구간들, 상태)` (D-65) |
+| `landingMission.js` | KSP식 착륙 절차. `LANDING_STEPS`, `activeStep`, `missedSteps`, `descentPenalty`, `landingGrade`(A~D), `aimBonus` (D-67, D-68) |
+| `landingGuidance.js`의 `descentProfile` | 천체 표면 착륙의 고도·속도·추력 (17단계에 추가, 18단계에서 지구 재진입에도 쓴다) |
