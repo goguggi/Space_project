@@ -30,7 +30,7 @@ import { createLorentzChart } from './ui/lorentzChart.js';
 import { createMissionChapters } from './ui/missionChapters.js';
 import { createLandingChecklist } from './ui/landingChecklist.js';
 import { missionChapters, currentChapter } from './physics/missionTimeline.js';
-import { activeStep, missedSteps, descentPenalty, aimBonus, LANDING_STEPS } from './physics/landingMission.js';
+import { activeStep, missedSteps, descentPenalty, aimBonus, stepsFor } from './physics/landingMission.js';
 import { computeTimeDilation, TRIP_TYPES } from './physics/timeDilation.js';
 import { judgeAll } from './physics/survival.js';
 import { journeyAt, travelDurationSeconds, beta as toBeta } from './physics/journey.js';
@@ -72,6 +72,8 @@ const state = {
 // 지구는 대기가 있어 재진입부터 보여주므로 celestialBodies의 landingStartAltitudeM를 쓴다 (D-66)
 const LANDING_START_ALTITUDE = 2_000;
 const LANDING_SECONDS = 10;
+// 지구 재진입은 80 km에서 시작하므로 더 길게 보여준다 (D-66)
+const REENTRY_SECONDS = 18;
 
 const el = (id) => document.getElementById(id);
 
@@ -350,6 +352,7 @@ function beginLanding(visual, phase) {
   state.landing.show();
   state.landing.start();
   landingHud?.setVisible(true);
+  checklist?.setSteps(stepsFor(visual));
   checklist?.setVisible(true);
   checklist?.clearResult();
   setMood('landing');
@@ -390,8 +393,8 @@ function updateLanding(t) {
   });
   checklist?.update({
     done: state.landingSteps,
-    active: activeStep(d.altitude, state.landingSteps),
-    missed: missedSteps(d.altitude, state.landingSteps),
+    active: activeStep(d.altitude, state.landingSteps, stepsFor(visual)),
+    missed: missedSteps(d.altitude, state.landingSteps, stepsFor(visual)),
     altitude: d.altitude,
   });
   audio.setEngine(state.landingSteps.burn === false ? 0 : d.thrust * 0.8);
@@ -492,7 +495,8 @@ function startTicker() {
       // 착륙 연출은 임무 시계를 멈추고 따로 진행한다
       // 착륙은 절차를 직접 수행해야 하므로 배속을 2배까지만 적용한다 (D-67)
       const landingScale = Math.min(Math.max(state.timeScale, 0.5), 2);
-      const next = state.landingProgress + (dt * landingScale) / LANDING_SECONDS;
+      const seconds = state.phase === 'reentry' ? REENTRY_SECONDS : LANDING_SECONDS;
+      const next = state.landingProgress + (dt * landingScale) / seconds;
       if (next >= 1) { updateLanding(1); finishLanding(); } else { updateLanding(next); }
     } else if (state.playing && state.phase === 'cruise' && state.result) {
       const durationSec = travelDurationSeconds(state.destination?.distance ?? 0,
@@ -593,7 +597,7 @@ Promise.all([
     landingHud = createLandingHud(el('cruise-hud'));
     checklist = createLandingChecklist(el('cruise-hud'), {
       onStep: (id) => doLandingStep(id),
-      onAuto: () => { for (const s2 of LANDING_STEPS) state.landingSteps[s2.id] = true; updateLanding(state.landingProgress); },
+      onAuto: () => { for (const s2 of stepsFor(state.landingBody)) state.landingSteps[s2.id] = true; updateLanding(state.landingProgress); },
     });
     // 18단계 (D-64): 발사 구간은 기본 5배속으로 돌려 지루하지 않게 한다
     state.timeScale = 5;

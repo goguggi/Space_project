@@ -69,7 +69,12 @@ a { color: var(--color-accent); }
 .scene-layer {
   position: absolute;
   inset: 0;
+  /* 층이 겹쳐 있으므로 빈 층은 마우스를 통과시킨다.
+     그래야 지금 보이는 장면의 캔버스가 드래그(시점 회전)를 받는다 (18단계 수정) */
+  pointer-events: none;
 }
+
+.scene-layer canvas { pointer-events: auto; }
 
 .scene-layer canvas {
   display: block;

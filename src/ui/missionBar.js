@@ -12,6 +12,7 @@ const PHASE_LABELS = {
   launch: '발사 진행 중',
   cruise: '항행 중',
   landing: '천체 착륙 중',
+  reentry: '지구 재진입 중',
   arrived: '도착',
 };
 
@@ -81,12 +82,13 @@ export function createMissionBar(container, handlers) {
       launch.textContent = s.phase === 'ready' ? '🚀 발사'
         : s.phase === 'launch' ? '발사 중…'
         : s.phase === 'cruise' ? '항행 중…'
-        : s.phase === 'landing' ? '착륙 중…' : '도착';
+        : s.phase === 'landing' ? '착륙 중…'
+        : s.phase === 'reentry' ? '재진입 중…' : '도착';
 
       const play = el('mission-play');
       play.hidden = s.phase !== 'cruise' && s.phase !== 'arrived';
       // 착륙 연출 중에는 진행 슬라이더를 잠근다 (임무 시계가 멈춰 있다)
-      scrub.disabled = s.phase === 'landing';
+      scrub.disabled = s.phase === 'landing' || s.phase === 'reentry';
       play.textContent = s.playing ? '❚❚' : '▶';
       play.title = s.playing ? '일시정지' : '재생';
 

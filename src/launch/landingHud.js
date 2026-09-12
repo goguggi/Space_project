@@ -32,6 +32,9 @@ export function createLandingHud(container) {
   function update(info) {
     el('landing-body').textContent = info.bodyName;
     el('landing-phase').textContent = info.landed ? '접지 완료'
+      : info.altitude > 55_000 ? '대기권 진입'
+      : info.altitude > 25_000 ? '플라스마 구간 (열 차폐)'
+      : info.altitude > 8_000 ? '감속 연소'
       : info.altitude > 300 ? '감속 하강'
       : info.altitude > 30 ? '최종 접근' : '접지 직전';
     el('landing-altitude').textContent = info.altitude >= 1000

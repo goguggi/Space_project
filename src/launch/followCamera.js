@@ -7,20 +7,35 @@ import * as THREE from '../../lib/three/three.module.js';
 /**
  * @param {THREE.Camera} camera
  * @param {import('../../lib/three/OrbitControls.js').OrbitControls} controls
- * @returns {{ setTarget: (object: THREE.Object3D | null, offset?: THREE.Vector3) => void, update: () => void }}
+ * @returns {{ setTarget: (object, offset?) => void, setOffset: (offset) => void, update: () => void }}
  */
 export function createFollowCamera(camera, controls) {
   let target = null;
   const lastTargetPos = new THREE.Vector3();
   const currentPos = new THREE.Vector3();
+  const offsetNow = new THREE.Vector3(30, 12, 30);
 
   function setTarget(object, offset = new THREE.Vector3(30, 12, 30)) {
     target = object;
+    offsetNow.copy(offset);
     if (!target) return;
     target.getWorldPosition(lastTargetPos);
-    camera.position.copy(lastTargetPos).add(offset);
+    camera.position.copy(lastTargetPos).add(offsetNow);
     controls.target.copy(lastTargetPos);
     controls.update();
+  }
+
+  /**
+   * 오프셋만 바꾼다 (18단계). 로켓이 기울 때 카메라도 같이 기울여 화면이 옆으로 돌지 않게 한다.
+   * 사용자가 마우스로 돌린 각도는 유지하지 않고, 로켓 기준 자리로 다시 잡는다.
+   */
+  function setOffset(offset) {
+    offsetNow.copy(offset);
+    if (!target) return;
+    target.getWorldPosition(currentPos);
+    camera.position.copy(currentPos).add(offsetNow);
+    controls.target.copy(currentPos);
+    lastTargetPos.copy(currentPos);
   }
 
   function update() {
@@ -32,5 +47,5 @@ export function createFollowCamera(camera, controls) {
     lastTargetPos.copy(currentPos);
   }
 
-  return { setTarget, update };
+  return { setTarget, setOffset, update };
 }

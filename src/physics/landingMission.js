@@ -8,7 +8,7 @@
  * 절차 목록. `readyAbove`~`readyBelow` 고도 구간에서 수행할 수 있다 (m).
  * required: 놓치면 감점되는 항목
  */
-export const LANDING_STEPS = [
+export const SURFACE_STEPS = [
   { id: 'burn', label: '감속 연소 시작', key: 'Z', readyBelow: 2_000, readyAbove: 600,
     hint: '고도 2,000 m 아래에서 엔진을 켜 낙하를 늦춘다', required: true },
   { id: 'legs', label: '착륙 다리 펴기', key: 'X', readyBelow: 900, readyAbove: 60,
@@ -19,14 +19,37 @@ export const LANDING_STEPS = [
     hint: '접지 직전에 엔진을 끈다', required: false },
 ];
 
+// 지구 재진입용 절차 (D-66). 고도 80 km에서 시작하므로 기준 고도가 훨씬 높다.
+export const REENTRY_STEPS = [
+  { id: 'heatshield', label: '열 차폐 자세', key: 'Z', readyBelow: 80_000, readyAbove: 45_000,
+    hint: '고도 80 km, 대기와 부딪히기 전에 바닥을 아래로 돌린다', required: true },
+  { id: 'burn', label: '감속 연소 시작', key: 'X', readyBelow: 30_000, readyAbove: 8_000,
+    hint: '고도 30 km 아래에서 엔진을 켜 낙하를 늦춘다', required: true },
+  { id: 'legs', label: '착륙 다리 펴기', key: 'C', readyBelow: 4_000, readyAbove: 300,
+    hint: '고도 4 km 아래에서 다리를 편다', required: true },
+  { id: 'final', label: '최종 접근 자세', key: 'V', readyBelow: 600, readyAbove: 20,
+    hint: '고도 600 m 아래에서 수직 자세를 잡는다', required: true },
+];
+
+/** 예전 이름 (달·화성 착륙 절차) */
+export const LANDING_STEPS = SURFACE_STEPS;
+
+/**
+ * 천체에 맞는 절차 목록. 지구는 대기가 있어 재진입 절차를 쓴다.
+ * @param {object} visual  data/celestialBodies.js 항목
+ */
+export function stepsFor(visual) {
+  return visual?.reentry ? REENTRY_STEPS : SURFACE_STEPS;
+}
+
 /**
  * 지금 고도에서 수행할 수 있는(그리고 아직 안 한) 절차.
  * @param {number} altitude  m
  * @param {Record<string, boolean>} done  절차 id → 수행 여부
  * @returns {object | null}
  */
-export function activeStep(altitude, done = {}) {
-  return LANDING_STEPS.find((s) => !done[s.id] && altitude <= s.readyBelow) ?? null;
+export function activeStep(altitude, done = {}, steps = SURFACE_STEPS) {
+  return steps.find((s) => !done[s.id] && altitude <= s.readyBelow) ?? null;
 }
 
 /**
@@ -34,8 +57,8 @@ export function activeStep(altitude, done = {}) {
  * @param {number} altitude
  * @param {Record<string, boolean>} done
  */
-export function missedSteps(altitude, done = {}) {
-  return LANDING_STEPS.filter((s) => !done[s.id] && altitude < s.readyAbove);
+export function missedSteps(altitude, done = {}, steps = SURFACE_STEPS) {
+  return steps.filter((s) => !done[s.id] && altitude < s.readyAbove);
 }
 
 /**
@@ -59,9 +82,9 @@ export function descentPenalty(done = {}) {
  * @returns {{ grade: string, score: number, notes: string[] }}
  *   score: 0~100
  */
-export function landingGrade(done = {}, touchdownSpeed = 1.5) {
+export function landingGrade(done = {}, touchdownSpeed = 1.5, steps = SURFACE_STEPS) {
   const notes = [];
-  const required = LANDING_STEPS.filter((s) => s.required);
+  const required = steps.filter((s) => s.required);
   const doneCount = required.filter((s) => done[s.id]).length;
   // 절차 60점 + 접지 속도 40점
   const stepScore = (doneCount / required.length) * 60;

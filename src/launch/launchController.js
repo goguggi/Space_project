@@ -124,21 +124,46 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
   // first 로켓 꼭대기에서 진행 방향을 본다 · third 뒤에서 따라간다 · wide 멀리서 지구 곡률까지
   let viewMode = 'third';
   const firstPersonLook = new THREE.Vector3();
+  const baseOffset = new THREE.Vector3(18, 0, 24);   // 로켓 기준 카메라 오프셋 (시점 모드마다 바뀐다)
 
   function setCameraMode(id) {
     viewMode = id === 'first' || id === 'wide' ? id : 'third';
     scene.controls.enabled = viewMode !== 'first';
     if (viewMode === 'third') {
       scene.camera.fov = 50;
-      follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));
+      baseOffset.set(18, rocket.heightUnits * 0.6, 24);
+      follow.setTarget(rocket.root, baseOffset.clone());
     } else if (viewMode === 'wide') {
       scene.camera.fov = 55;
-      follow.setTarget(rocket.root, new THREE.Vector3(95, 48, 165));
+      baseOffset.set(95, 48, 165);
+      follow.setTarget(rocket.root, baseOffset.clone());
     } else {
       scene.camera.fov = 78;
       follow.setTarget(null);
     }
+    if (viewMode !== 'first') updateUprightCamera();
     scene.camera.updateProjectionMatrix();
+  }
+
+  // 로켓이 있는 곳의 국소 수직 (지구 중심에서 로켓을 향하는 방향). 화면 좌표계 기준
+  const localUp = new THREE.Vector3();
+  const camOffset = new THREE.Vector3();
+
+  /**
+   * 3인칭·광역에서 카메라가 로켓과 함께 기울도록 만든다 (18단계 수정).
+   * 발사 후 로켓은 피치 프로그램으로 동쪽으로 눕고, 지구 곡률을 따라 진행 방향도 돈다.
+   * 카메라 오프셋을 세계 좌표에 고정해 두면 그만큼 화면이 옆으로 돌아가 보인다.
+   * 그래서 오프셋을 로켓의 국소 수직에 맞춰 함께 돌리고, 카메라의 위쪽도 국소 수직으로 둔다.
+   */
+  function updateUprightCamera() {
+    const { r } = timeline.sim.vehicle;
+    // 화면 좌표에서 지구 중심은 (0, −R/S, 0). 로켓 위치에서 본 국소 수직
+    const [x, y] = toScene(r);
+    localUp.set(x, y + EARTH_RADIUS / S, 0).normalize();
+    const angle = Math.atan2(localUp.x, localUp.y);   // 발사장에서 잰 다운레인지 각
+    camOffset.copy(baseOffset).applyAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+    follow.setOffset(camOffset);
+    scene.camera.up.copy(localUp);
   }
 
   /** 1인칭: 로켓 꼭대기에 카메라를 두고 추력 방향을 본다 */
@@ -155,7 +180,7 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     const events = timeline.update(dt);
     handleEvents(events);
     placeRocket();
-    if (viewMode === 'first') updateFirstPerson(); else follow.update();
+    if (viewMode === 'first') { updateFirstPerson(); } else { updateUprightCamera(); follow.update(); }
     refreshViews();
     if (events.some((e) => e.type === 'complete')) handlers.onComplete?.(events);
   });

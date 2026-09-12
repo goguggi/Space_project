@@ -2,7 +2,7 @@
 // 역할: 지금 할 수 있는 절차를 강조해 보여주고, 버튼이나 단축키로 수행을 받는다.
 // 판정과 등급 계산은 physics/landingMission.js가 한다.
 
-import { LANDING_STEPS, landingGrade } from '../physics/landingMission.js';
+import { SURFACE_STEPS, landingGrade } from '../physics/landingMission.js';
 
 /**
  * @param {HTMLElement} container
@@ -23,12 +23,23 @@ export function createLandingChecklist(container, handlers) {
   `;
   container.appendChild(box);
 
-  const list = box.querySelector('#checklist-items');
+  const listEl = box.querySelector('#checklist-items');
   const result = box.querySelector('#checklist-result');
   box.querySelector('#checklist-auto').addEventListener('click', () => handlers.onAuto());
 
   const rows = new Map();
-  for (const step of LANDING_STEPS) {
+  let steps = SURFACE_STEPS;
+
+  /** 천체에 맞는 절차 목록으로 다시 만든다 (지구 재진입은 절차가 다르다) */
+  function setSteps(list) {
+    steps = list;
+    rows.clear();
+    listEl.innerHTML = '';
+    buildRows();
+  }
+
+  function buildRows() {
+  for (const step of steps) {
     const li = document.createElement('li');
     li.className = 'checklist-item';
     li.innerHTML = `
@@ -38,16 +49,18 @@ export function createLandingChecklist(container, handlers) {
     `;
     li.title = step.hint;
     li.querySelector('button').addEventListener('click', () => handlers.onStep(step.id));
-    list.appendChild(li);
+    listEl.appendChild(li);
     rows.set(step.id, { li, state: li.querySelector('.checklist-state') });
   }
+  }
+  buildRows();
 
   // 단축키 (입력칸에 글자를 치는 중에는 무시)
   window.addEventListener('keydown', (e) => {
     if (box.hidden) return;
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-    const step = LANDING_STEPS.find((s) => s.key.toLowerCase() === e.key.toLowerCase());
+    const step = steps.find((s) => s.key.toLowerCase() === e.key.toLowerCase());
     if (step) { e.preventDefault(); handlers.onStep(step.id); }
   });
 
@@ -55,8 +68,9 @@ export function createLandingChecklist(container, handlers) {
    * @param {{ done: object, active: object | null, missed: Array, altitude: number }} s
    */
   function update(s) {
-    for (const step of LANDING_STEPS) {
+    for (const step of steps) {
       const row = rows.get(step.id);
+      if (!row) continue;
       const isDone = Boolean(s.done[step.id]);
       const isActive = s.active?.id === step.id;
       const isMissed = s.missed.some((m) => m.id === step.id);
@@ -69,7 +83,7 @@ export function createLandingChecklist(container, handlers) {
 
   /** 접지 후 등급을 보여준다 */
   function showResult(done, touchdownSpeed, aim) {
-    const g = landingGrade(done, touchdownSpeed);
+    const g = landingGrade(done, touchdownSpeed, steps);
     const total = Math.min(100, g.score + (aim?.bonus ?? 0));
     result.hidden = false;
     result.className = `checklist-result grade-${g.grade}`;
@@ -84,6 +98,7 @@ export function createLandingChecklist(container, handlers) {
   }
 
   return {
+    setSteps,
     update,
     showResult,
     setVisible(on) { box.hidden = !on; if (!on) result.hidden = true; },
