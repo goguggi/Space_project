@@ -21,6 +21,7 @@
 | [06_decisions.md](06_decisions.md) | 확정된 결정(D-01~D-47), 물리 근거 결정(P), 미결 질문(현재 없음) |
 | [07_feature_plans.md](07_feature_plans.md) | 기능 계획 누적 기록. 새 기능을 계획할 때마다 하나씩 추가 |
 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md) | 로켓 설계 프로그램 담당자용 인수 문서. JSON 형식, 검증 규칙, 개발 단계 |
+| [10_feature4_spec.md](10_feature4_spec.md) | 기능 4(18단계) 세부 스펙과 미결 질문 Q-29~Q-33 |
 | [09_current_status.md](09_current_status.md) | **현재 상황 인수인계.** 완료·진행 중·남은 일, 다른 컴퓨터에서 시작하는 방법. 이어서 할 때 이 문서부터 |
 | [examples/falcon_heavy.rocket.json](examples/falcon_heavy.rocket.json) | 로켓 제원 JSON 기준 예제 (md 아님, 계약 파일) |
 
