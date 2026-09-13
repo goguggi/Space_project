@@ -328,16 +328,23 @@ function recompute() {
 function renderLifespan() {
   if (!state.result) return;
   lifespanChart.setResult(state.result, state.departureAges);
-  lifespanChart.setProgress(state.progress);
+  // 막대 그래프도 여정 전체 기준으로 (경유 여행이면 구간 진행률을 전체 진행률로 바꾼다)
+  lifespanChart.setProgress(share
+    ? share.beforeFraction + share.curFraction * state.progress
+    : state.progress);
   updateSurvival();
 }
 
 function updateSurvival() {
   if (!state.result) return;
   const j = currentJourney();
+  // 경유 여행이면 앞 구간에서 흐른 시간까지 더해 판정한다 (D-95)
+  const share = legShareInfo();
+  const doneEarth = share ? state.result.earthTime * share.beforeFraction : 0;
+  const doneShip = share ? state.result.shipTime * share.beforeFraction : 0;
   survivalIcons.update(judgeAll(ORGANISMS, state.departureAges, {
-    earthTime: j.earthElapsed,
-    shipTime: j.shipElapsed,
+    earthTime: j.earthElapsed + doneEarth,
+    shipTime: j.shipElapsed + doneShip,
   }));
 }
 
@@ -423,11 +430,43 @@ function targetGravity() {
   return targetVisual()?.surfaceGravity ?? 1.62;
 }
 
+/**
+ * 경유 여행에서 지금 구간이 전체 여정에서 차지하는 몫 (21단계, D-95).
+ * 경유 여행이 아니면 null.
+ */
+function legShareInfo() {
+  const legs = routeLegs();
+  if (!legs) return null;
+  const total = legs.reduce((sum, l) => sum + l.distance, 0) || 1;
+  const before = legs.slice(0, state.legIndex).reduce((sum, l) => sum + l.distance, 0);
+  const cur = legs[Math.min(state.legIndex, legs.length - 1)].distance;
+  return { total, beforeFraction: before / total, curFraction: cur / total };
+}
+
+/**
+ * 지금 시점의 여정 상태.
+ * 경유 여행에서는 **지금 구간**만 놓고 계산한다. 전체 거리로 계산하면 3D 장면이
+ * 구간과 맞지 않는 축척으로 천체를 배치해 아무것도 안 보이게 된다.
+ * 스톱워치에 넣을 누적 시간은 setProgress에서 앞 구간 몫을 더해 준다.
+ */
 function currentJourney() {
+  const result = state.result ?? { earthTime: 0, shipTime: 0 };
+  const share = legShareInfo();
+  if (share) {
+    return journeyAt({
+      distance: legDistanceMeters(),
+      roundTrip: false,
+      result: {
+        earthTime: result.earthTime * share.curFraction,
+        shipTime: result.shipTime * share.curFraction,
+      },
+      progress: state.progress,
+    });
+  }
   return journeyAt({
     distance: state.destination?.distance ?? 0,
     roundTrip: state.tripType === TRIP_TYPES.ROUND_TRIP,
-    result: state.result ?? { earthTime: 0, shipTime: 0 },
+    result,
     progress: state.progress,
   });
 }
@@ -440,17 +479,24 @@ function setProgress(p) {
   const j = currentJourney();
   const b = toBeta(state.speed ?? 0);
 
-  stopwatch.setTimes(j.earthElapsed, j.shipElapsed);
+  // 경유 여행이면 앞 구간에서 이미 흐른 시간을 더해 시계가 이어지게 한다 (D-95)
+  const share = legShareInfo();
+  const doneEarth = share ? state.result.earthTime * share.beforeFraction : 0;
+  const doneShip = share ? state.result.shipTime * share.beforeFraction : 0;
+  stopwatch.setTimes(j.earthElapsed + doneEarth, j.shipElapsed + doneShip);
   // 음악도 시간 지연을 따라 늘어진다 (21단계): γ가 클수록 초침과 음형이 느려진다
   audio.setTimeDilation(gamma(state.speed ?? 0));
-  lifespanChart.setProgress(state.progress);
+  // 막대 그래프도 여정 전체 기준으로 (경유 여행이면 구간 진행률을 전체 진행률로 바꾼다)
+  lifespanChart.setProgress(share
+    ? share.beforeFraction + share.curFraction * state.progress
+    : state.progress);
   updateSurvival();
 
   if (state.cruise) {
     state.cruise.setProgress(j, b);
     cruiseHud?.update({
-      targetName: state.destination.name,
-      roundTrip: state.tripType === TRIP_TYPES.ROUND_TRIP,
+      targetName: legTargetVisual()?.name ?? state.destination.name,
+      roundTrip: !share && state.tripType === TRIP_TYPES.ROUND_TRIP,
       journey: j,
       beta: b,
       gamma: gamma(state.speed ?? 0),
@@ -921,7 +967,7 @@ function startTicker() {
     if (state.view === 'first' && state.cruise && state.phase === 'cruise' && state.result) {
       const j = currentJourney();
       state.cruise.setCockpitReadout({
-        target: state.destination?.name ?? '-',
+        target: legTargetVisual()?.name ?? '-',
         speedText: `${formatNumber((state.speed ?? 0) / 1000, 0)} km/s`,
         remainText: formatDistance(j.toTarget),
         gammaText: formatNumber(gamma(state.speed ?? 0), 3),
