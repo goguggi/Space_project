@@ -246,6 +246,25 @@ export function createLandingScene(container) {
   scene.add(fireball);
   let blastTime = -1;
 
+  // ---- 마우스로 몸 돌리기 (20단계, D-84) ----
+  // 유니티의 1인칭 조작처럼, 화면을 누르면 마우스 포인터를 잠그고 마우스 이동으로 시선을 돌린다.
+  // 좌우(movementX)는 **몸의 방향(yaw)** 을 돌리고, 상하(movementY)는 고개(pitch)만 든다.
+  const canvasEl = renderer.domElement;
+
+  canvasEl.addEventListener('click', () => {
+    if (evaMode && !pointerLocked) canvasEl.requestPointerLock?.();
+  });
+  document.addEventListener('pointerlockchange', () => {
+    pointerLocked = document.pointerLockElement === canvasEl;
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!pointerLocked || !evaMode) return;
+    walker.camYaw -= e.movementX * LOOK_SENSITIVITY;
+    walker.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, walker.pitch - e.movementY * LOOK_SENSITIVITY));
+    if (viewMode === 'first') walker.yaw = walker.camYaw;   // 1인칭은 몸이 시선을 따라간다
+    updateAstronaut();
+  });
+
   const lander = createLander();
   scene.add(lander);
   const legs = lander.userData.legs;
@@ -261,7 +280,39 @@ export function createLandingScene(container) {
   let altitude = 0;
   let gravityNow = 1.62;
   let evaMode = false;
-  const walker = { x: 0, z: 14, yaw: 0, vy: 0, y: 0 };
+  // ---- 우주인 캐릭터 조작 (20단계, D-84) ----
+  // 일반적인 3D 게임의 캐릭터 컨트롤러와 같은 방식으로 만든다.
+  //   · 마우스가 시선(camYaw·pitch)을 돌린다. 1인칭이면 몸도 곧바로 그 방향을 본다.
+  //   · WASD는 **카메라가 보는 방향 기준**으로 움직인다 (앞/뒤/좌/우 스트레이프).
+  //   · 속도는 즉시 바뀌지 않고 가속·감속한다. 그래서 걷기 시작과 멈춤이 부드럽다.
+  //   · 3인칭에서는 몸이 실제 이동 방향으로 서서히 돌아간다.
+  //   · 점프는 지면에 있을 때만. 공중에서는 조작이 약해진다(공중 제어).
+  const walker = {
+    x: 0, z: 12, y: 0,
+    yaw: Math.PI,        // 몸이 향한 각
+    camYaw: Math.PI,     // 시선(카메라)이 향한 각
+    pitch: 0,            // 고개 각
+    vx: 0, vz: 0, vy: 0, // 속도 (m/s)
+    grounded: true,
+    speed: 0,            // 수평 속도 크기 (애니메이션용)
+  };
+  const EYE_HEIGHT = 1.72;               // 헬멧 안 눈높이 (m)
+  const PITCH_LIMIT = (78 * Math.PI) / 180;
+  const LOOK_SENSITIVITY = 0.0024;
+  const GROUND_ACCEL = 14;               // 지면 가속 (1/s). 클수록 즉각적
+  const GROUND_DAMP = 11;                // 지면 감속
+  const AIR_CONTROL = 0.28;              // 공중에서의 조작 비율
+  const TURN_RATE = 9;                   // 몸이 이동 방향으로 도는 속도 (1/s)
+  const CAM_FOLLOW = 12;                 // 3인칭 카메라 따라오기 (1/s)
+  let bobPhase = 0;
+  let landDip = 0;                       // 착지 순간 카메라가 살짝 내려앉는 양
+  let pointerLocked = false;
+  const camPos = new THREE.Vector3();
+  const camAim = new THREE.Vector3();
+  let camReady = false;
+
+  /** 각도 차이를 −π~π로 (부드러운 회전에 쓴다) */
+  const angleDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
   function setBody(visual) {
     bodyName = visual.name;
@@ -279,30 +330,43 @@ export function createLandingScene(container) {
     if (isEarth) { rocks.clear(); groundMaterial.color.set(0x3b6b3f); }
   }
 
-  function placeCamera() {
+  function placeCamera(dt = 0.016) {
     if (evaMode) {
-      // 우주인 뒤를 따라가는 시점. 1인칭이면 헬멧 안에서 본다
-      const ax = walker.x;
-      const az = walker.z;
-      const ay = walker.y;
+      const headY = walker.y + EYE_HEIGHT - landDip;
       if (viewMode === 'first') {
-        camera.fov = 80;
-        camera.position.set(ax, ay + 1.7, az);
-        controls.target.set(ax + Math.sin(walker.yaw) * 10, ay + 1.5, az + Math.cos(walker.yaw) * 10);
-      } else if (viewMode === 'wide') {
-        camera.fov = 55;
-        camera.position.set(ax + 40, ay + 46, az + 40);
-        controls.target.set(ax, ay + 1, az);
-      } else {
-        camera.fov = 58;
-        camera.position.set(ax - Math.sin(walker.yaw) * 9, ay + 4.2, az - Math.cos(walker.yaw) * 9);
-        controls.target.set(ax, ay + 1.4, az);
+        // 헬멧 안: 카메라가 곧 눈. 걸을 때 살짝 위아래로 흔들린다
+        controls.enabled = false;
+        camera.fov = 78;
+        const bob = Math.sin(bobPhase * 2) * 0.035 * Math.min(walker.speed / 2, 1);
+        camera.position.set(walker.x, headY + bob, walker.z);
+        camera.up.set(0, 1, 0);
+        camera.rotation.order = 'YXZ';
+        camera.rotation.set(walker.pitch, walker.camYaw + Math.PI, 0);
+        camera.updateProjectionMatrix();
+        camReady = false;
+        return;
       }
+      // 3인칭: 시선 방향 뒤쪽에 카메라를 두고 부드럽게 따라간다
+      controls.enabled = false;
+      const dist = viewMode === 'wide' ? 26 : 7.5;
+      const height = viewMode === 'wide' ? 14 : 2.6;
+      camera.fov = viewMode === 'wide' ? 60 : 62;
+      const back = Math.cos(walker.pitch);
+      camAim.set(
+        walker.x - Math.sin(walker.camYaw) * dist * back,
+        headY + height + Math.sin(-walker.pitch) * dist,
+        walker.z - Math.cos(walker.camYaw) * dist * back,
+      );
+      if (!camReady) { camPos.copy(camAim); camReady = true; }
+      camPos.lerp(camAim, Math.min(1, CAM_FOLLOW * dt));
+      camera.position.copy(camPos);
       camera.up.set(0, 1, 0);
+      camera.lookAt(walker.x, headY, walker.z);
       camera.updateProjectionMatrix();
-      controls.update();
       return;
     }
+    camReady = false;
+    controls.enabled = true;
     const h = altitude;
     if (viewMode === 'first') {
       // 조종석에서 앞아래를 내려다본다. 똑바로 아래만 보면 지면만 가득 차 하얗게 보인다
@@ -422,7 +486,9 @@ export function createLandingScene(container) {
       }
     }
 
-    controls.update();
+    // OrbitControls는 enabled가 false여도 update()가 카메라를 제 자리로 되돌린다.
+    // 1인칭 탐사에서는 카메라를 직접 다루므로 부르지 않는다 (20단계 수정)
+    if (controls.enabled) controls.update();
     renderer.render(scene, camera);
   }
 
@@ -503,6 +569,8 @@ export function createLandingScene(container) {
     walker.z = 12;
     walker.y = 0;
     walker.vy = 0;
+    walker.yaw = Math.PI;      // 착륙선을 바라보고 시작한다
+    walker.pitch = 0;
     taskMarkers.clear();
     for (const task of tasks) {
       const marker = new THREE.Group();
@@ -558,31 +626,96 @@ export function createLandingScene(container) {
   function updateAstronaut() {
     astronaut.position.set(walker.x, walker.y, walker.z);
     astronaut.rotation.y = walker.yaw;
+    // 1인칭에서는 카메라가 헬멧 안에 있으므로 머리와 얼굴판을 감춘다
+    const inside = evaMode && viewMode === 'first';
+    for (const child of astronaut.children) {
+      const isHead = Math.abs(child.position.y - 1.68) < 0.05 || Math.abs(child.position.y - 1.7) < 0.05;
+      if (isHead) child.visible = !inside;
+    }
   }
 
   /**
-   * 걷기 한 걸음. main.js가 매 프레임 방향과 시간 간격을 준다.
-   * @param {{ forward: number, strafe: number, turn: number, jump: boolean }} input
-   * @param {number} dt
-   * @param {{ walkSpeed: number, jumpSpeed: number }} params
+   * 캐릭터 한 프레임. main.js가 입력과 시간 간격을 준다.
+   * @param {{ forward: number, strafe: number, turn: number, jump: boolean, run: boolean }} input
+   *   forward/strafe: −1 ~ 1 (카메라 기준), turn: 방향키로 시선 돌리기, jump/run: 눌림 여부
+   * @param {number} dt   초
+   * @param {{ walkSpeed: number, jumpSpeed: number }} params  천체 중력에 맞춘 값
    */
   function stepWalk(input, dt, params) {
-    if (!evaMode) return walker;
-    walker.yaw += input.turn * 1.8 * dt;
-    const speed = params.walkSpeed * (input.run ? 1.9 : 1);
-    const dx = (Math.sin(walker.yaw) * input.forward + Math.cos(walker.yaw) * input.strafe) * speed * dt;
-    const dz = (Math.cos(walker.yaw) * input.forward - Math.sin(walker.yaw) * input.strafe) * speed * dt;
-    walker.x = Math.max(-GROUND_RADIUS * 0.9, Math.min(GROUND_RADIUS * 0.9, walker.x + dx));
-    walker.z = Math.max(-GROUND_RADIUS * 0.9, Math.min(GROUND_RADIUS * 0.9, walker.z + dz));
-    if (input.jump && walker.y <= 0.001) walker.vy = params.jumpSpeed;
+    if (!evaMode || dt <= 0) return walker;
+
+    // ---- 시선: 방향키로도 돌릴 수 있다 (마우스를 안 쓰는 사람을 위해) ----
+    if (input.turn) {
+      walker.camYaw += input.turn * 2.2 * dt;
+      if (viewMode === 'first') walker.yaw = walker.camYaw;
+    }
+
+    // ---- 가고 싶은 방향 (카메라 기준) ----
+    const mag = Math.hypot(input.forward, input.strafe);
+    const targetSpeed = params.walkSpeed * (input.run ? 1.9 : 1);
+    let wishX = 0;
+    let wishZ = 0;
+    if (mag > 0.01) {
+      const fx = Math.sin(walker.camYaw);
+      const fz = Math.cos(walker.camYaw);
+      // 오른쪽 방향은 앞 방향을 −90° 돌린 것
+      const rx = Math.sin(walker.camYaw - Math.PI / 2);
+      const rz = Math.cos(walker.camYaw - Math.PI / 2);
+      const nf = input.forward / mag;
+      const ns = input.strafe / mag;
+      wishX = (fx * nf - rx * ns) * targetSpeed;
+      wishZ = (fz * nf - rz * ns) * targetSpeed;
+    }
+
+    // ---- 가속·감속 (즉시 최고 속도가 되지 않는다) ----
+    const control = walker.grounded ? 1 : AIR_CONTROL;
+    const rate = (mag > 0.01 ? GROUND_ACCEL : GROUND_DAMP) * control;
+    const k = 1 - Math.exp(-rate * dt);      // 시간 간격이 달라도 같은 느낌이 되도록
+    walker.vx += (wishX - walker.vx) * k;
+    walker.vz += (wishZ - walker.vz) * k;
+
+    // ---- 점프와 중력 ----
+    if (input.jump && walker.grounded) {
+      walker.vy = params.jumpSpeed;
+      walker.grounded = false;
+    }
     walker.vy -= gravityNow * dt;
-    walker.y = Math.max(0, walker.y + walker.vy * dt);
-    if (walker.y === 0) walker.vy = 0;
-    // 걸을 때 팔다리를 흔든다
-    const moving = Math.abs(input.forward) + Math.abs(input.strafe) > 0.01;
-    const swing = moving ? Math.sin(performance.now() * 0.006) * 0.5 : 0;
+    walker.y += walker.vy * dt;
+    if (walker.y <= 0) {
+      if (!walker.grounded) landDip = Math.min(0.22, Math.abs(walker.vy) * 0.03);   // 착지 반동
+      walker.y = 0;
+      walker.vy = 0;
+      walker.grounded = true;
+    }
+
+    // ---- 위치 ----
+    const limit = GROUND_RADIUS * 0.9;
+    walker.x = Math.max(-limit, Math.min(limit, walker.x + walker.vx * dt));
+    walker.z = Math.max(-limit, Math.min(limit, walker.z + walker.vz * dt));
+    walker.speed = Math.hypot(walker.vx, walker.vz);
+
+    // ---- 몸의 방향 ----
+    if (viewMode === 'first') {
+      walker.yaw = walker.camYaw;
+    } else if (walker.speed > 0.15) {
+      // 3인칭: 실제 가는 쪽으로 몸이 서서히 돌아간다
+      const moveYaw = Math.atan2(walker.vx, walker.vz);
+      walker.yaw += angleDelta(moveYaw, walker.yaw) * Math.min(1, TURN_RATE * dt);
+    }
+
+    // ---- 걸음 애니메이션과 머리 흔들림 ----
+    const stride = walker.grounded ? walker.speed / Math.max(params.walkSpeed, 0.1) : 0;
+    bobPhase += dt * (4.5 + stride * 5.5);
+    const swing = Math.sin(bobPhase) * 0.55 * stride;
     astronaut.userData.limbs.forEach((limb, i) => { limb.rotation.x = swing * (i % 2 ? -1 : 1); });
+    if (!walker.grounded) {
+      // 공중에서는 팔다리를 모은다
+      astronaut.userData.limbs.forEach((limb) => { limb.rotation.x = -0.35; });
+    }
+    landDip = Math.max(0, landDip - dt * 0.9);
+
     updateAstronaut();
+    placeCamera(dt);
     return walker;
   }
 
@@ -596,7 +729,10 @@ export function createLandingScene(container) {
     startEva,
     completeTask,
     stepWalk,
+    /** 마우스 잠금 해제 (다른 화면으로 넘어갈 때) */
+    releaseLook() { if (pointerLocked) document.exitPointerLock?.(); },
     get walker() { return walker; },
+    get pointerLocked() { return pointerLocked; },
     get isEva() { return evaMode; },
     get bodyName() { return bodyName; },
     show() { renderer.domElement.style.display = 'block'; resize(); },

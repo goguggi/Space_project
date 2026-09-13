@@ -525,11 +525,12 @@ function startEva() {
   state.evaTasks = {};
   const g = landingGravity();
   state.landing.startEva(EXPLORATION_TASKS, g);
+  setView('first');            // 탐사는 우주인 1인칭으로 시작한다 (D-84)
   checklist?.setVisible(false);
   landingHud?.setVisible(false);
   evaPanel?.setVisible(true);
   setMood('arrived');
-  setSubtitle(`${state.landingBody?.name ?? '목적지'} 지표 탐사 — W A S D로 걷고, 파란 원 안에서 E를 누르세요.`);
+  setSubtitle(`${state.landingBody?.name ?? '목적지'} 지표 탐사 — 화면을 한 번 누르면 마우스로 몸을 돌립니다. W A S D로 걷고, 파란 원 안에서 E를 누르세요.`);
   refreshEva();
   syncBar();
 }
@@ -575,6 +576,7 @@ function finishEva() {
 
 /** 목적지 지표에서 이륙한다. 착륙의 반대 순서로 올라간다 */
 function startLiftoff() {
+  state.landing?.releaseLook();
   if (!state.landing) return;
   state.phase = 'liftoff';
   state.liftoffProgress = 0;
@@ -641,6 +643,7 @@ function retryLanding() {
 }
 
 function finishCruise() {
+  state.landing?.releaseLook();
   state.phase = 'arrived';
   state.playing = false;
   stopwatch.setStatus('도착');
@@ -655,6 +658,7 @@ function finishCruise() {
 }
 
 function resetMission() {
+  state.landing?.releaseLook();
   state.phase = 'ready';
   state.playing = false;
   state.progress = 0;

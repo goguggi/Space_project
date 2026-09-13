@@ -16,7 +16,7 @@ export function createEvaPanel(container, handlers) {
   box.innerHTML = `
     <div class="checklist-head">
       <span>지표 탐사</span>
-      <span class="ascent-hint" id="eva-keys">W A S D 이동 · Shift 달리기 · Space 점프 · E 수행</span>
+      <span class="ascent-hint" id="eva-keys">화면 클릭 → 마우스로 몸 돌리기<br>W A S D 이동 · Shift 달리기 · Space 점프 · E 수행</span>
     </div>
     <ul class="checklist-items" id="eva-items"></ul>
     <div class="eva-status" id="eva-status">착륙선 밖으로 나왔습니다.</div>
