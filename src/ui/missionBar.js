@@ -76,9 +76,8 @@ export function createMissionBar(container, handlers) {
     update(s) {
       el('mission-phase').textContent = PHASE_LABELS[s.phase] ?? s.phase;
       el('mission-percent').textContent = `${Math.round(s.progress * 100)}%`;
-      const ascent = s.phase === 'launch';
-      el('mission-start').textContent = ascent ? '발사대' : '출발';
-      el('mission-end').textContent = ascent ? '궤도' : '도착';
+      el('mission-start').textContent = s.fromLabel ?? '출발';
+      el('mission-end').textContent = s.toLabel ?? '도착';
       // 사용자가 슬라이더를 끄는 중에는 값을 덮어쓰지 않는다
       if (document.activeElement !== scrub) scrub.value = String(Math.round(s.progress * 1000));
       scrub.style.setProperty('--fill', `${s.progress * 100}%`);

@@ -124,6 +124,7 @@ const missionBar = createMissionBar(el('mission-bar-container'), {
   onSkip: () => {
     if (state.phase === 'launch') { state.launch?.skip(); return; }
     if (state.phase === 'liftoff') {
+      syncBar();
       const next = state.liftoffProgress + (dt * Math.min(Math.max(state.timeScale, 0.5), 3)) / LIFTOFF_SECONDS;
       if (next >= 1) { updateLiftoff(1); finishLiftoff(); } else { updateLiftoff(next); }
     } else if (state.phase === 'landing' || state.phase === 'reentry') { updateLanding(1); finishLanding(); return; }
@@ -223,14 +224,37 @@ function playChapter(id) {
   }
 }
 
+/**
+ * 지금 단계에 맞는 진행 막대 값과 양 끝 이름 (20단계 수정).
+ * 착륙·탐사·이륙 중에 항행 진행률(예: 100%)을 그대로 보여주면 "이미 도착"처럼 보인다.
+ */
+function barState() {
+  switch (state.phase) {
+    case 'launch':
+      return { value: state.launch ? ascentProgress(state.launch.timeline.sim) : 0, from: '발사대', to: '궤도' };
+    case 'landing':
+      return { value: state.landingProgress, from: '상공', to: '접지' };
+    case 'reentry':
+      return { value: state.landingProgress, from: '대기권', to: '착륙' };
+    case 'crashed':
+      return { value: 1, from: '상공', to: '파손' };
+    case 'eva':
+      return { value: explorationScore(state.evaTasks).doneCount / explorationScore(state.evaTasks).total,
+        from: '탐사 시작', to: '임무 완료' };
+    case 'liftoff':
+      return { value: state.liftoffProgress, from: '지표', to: '궤도' };
+    default:
+      return { value: state.progress, from: '출발', to: '도착' };
+  }
+}
+
 function syncBar() {
-  // 발사 구간에서는 항행 진행률 대신 상승 이정표 진행률을 보여준다 (19단계)
-  const barProgress = state.phase === 'launch' && state.launch
-    ? ascentProgress(state.launch.timeline.sim)
-    : state.progress;
+  const bar = barState();
   missionBar.update({
     phase: state.phase,
-    progress: barProgress,
+    progress: bar.value,
+    fromLabel: bar.from,
+    toLabel: bar.to,
     playing: state.playing,
     timeScale: state.timeScale,
     ready: Boolean(state.launch && state.result),
@@ -570,8 +594,7 @@ function doEvaTask() {
  */
 function finishEva() {
   evaPanel?.setVisible(false);
-  if (state.tripType !== TRIP_TYPES.ROUND_TRIP) { finishCruise(); return; }
-  startLiftoff();
+  startLiftoff();          // 편도든 왕복이든 일단 지표에서 떠오른다
 }
 
 /** 목적지 지표에서 이륙한다. 착륙의 반대 순서로 올라간다 */
@@ -626,6 +649,15 @@ function finishLiftoff() {
   state.cruise?.start();
   state.cruise?.setCameraMode(state.view);
   cruiseHud?.setVisible(true);
+  if (state.tripType !== TRIP_TYPES.ROUND_TRIP) {
+    // 편도: 목적지 궤도에 오른 것으로 여행이 끝난다
+    state.cruise?.hide();
+    state.cruise?.stop();
+    cruiseHud?.setVisible(false);
+    setSubtitle(`${state.landingBody?.name ?? '목적지'} 궤도 진입 — 편도 여행을 마쳤습니다.`);
+    finishCruise();
+    return;
+  }
   state.phase = 'cruise';
   state.visitedTarget = true;
   state.playing = true;
@@ -701,6 +733,7 @@ function startTicker() {
     const dt = Math.min((now - last) / 1000, 0.5);
     last = now;
     if (state.phase === 'liftoff') {
+      syncBar();
       const next = state.liftoffProgress + (dt * Math.min(Math.max(state.timeScale, 0.5), 3)) / LIFTOFF_SECONDS;
       if (next >= 1) { updateLiftoff(1); finishLiftoff(); } else { updateLiftoff(next); }
     } else if (state.phase === 'landing' || state.phase === 'reentry') {
@@ -743,6 +776,7 @@ function startTicker() {
         run: walkKeys.has('shift'),
       }, dt, walkParameters(g));
       refreshEva();
+      syncBar();
     }
     // 조종석 계기판 갱신
     if (state.view === 'first' && state.cruise && state.phase === 'cruise' && state.result) {
