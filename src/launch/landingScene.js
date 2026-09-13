@@ -461,6 +461,39 @@ export function createLandingScene(container) {
     evaMode = false;
   }
 
+  /**
+   * 이륙 (20단계, D-80): 착륙의 반대. 지표에서 솟아오른다.
+   * 착륙 다리를 접고 엔진을 최대로 켠 채 고도가 올라간다.
+   * @param {{ altitude: number, speed: number }} rise
+   */
+  function setLiftoff(rise) {
+    evaMode = false;
+    astronaut.visible = false;
+    lander.visible = true;
+    altitude = Math.max(rise.altitude, 0);
+    lander.position.y = altitude;
+    const flame = lander.userData.flame;
+    if (flame) {
+      flame.visible = true;
+      flame.scale.setScalar(1.5 + Math.min(altitude / 600, 1.4));
+      flame.material.opacity = 0.9;
+    }
+    // 다리는 이륙 직후 접힌다
+    const folded = altitude > 40;
+    for (const leg of legs) {
+      leg.mesh.rotation.z = folded ? leg.closedZ : leg.openZ;
+      leg.mesh.rotation.x = folded ? leg.closedX : leg.openX;
+    }
+    for (const pad of pads) pad.visible = !folded;
+    // 하늘은 올라갈수록 다시 어두워진다 (대기가 있는 천체)
+    if (hasAtmosphere) {
+      const t = Math.min(altitude / 60_000, 1);
+      sky.material.opacity = 0.72 * ((1 - t) ** 2.2) + 0.05;
+      stars.visible = t > 0.3;
+    }
+    placeCamera();
+  }
+
   /** 탐사 시작: 우주인을 착륙선 옆에 세우고 임무 표식을 놓는다 (D-77) */
   function startEva(tasks, gravity) {
     gravityNow = gravity;
@@ -558,6 +591,7 @@ export function createLandingScene(container) {
     setDescent,
     setCameraMode,
     explode,
+    setLiftoff,
     resetScene,
     startEva,
     completeTask,

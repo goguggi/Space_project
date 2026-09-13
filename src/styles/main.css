@@ -1100,3 +1100,42 @@ a { color: var(--color-accent); }
 }
 
 .eva-result[hidden] { display: none; }
+
+/* 구간 칩: 시작 지점 체크 (20단계) */
+.chapter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 6px;
+}
+
+.chapter-chip.disabled { opacity: 0.35; }
+
+.chapter-check {
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.chapter-check.picked { color: var(--color-ship); }
+.chapter-check:disabled { cursor: default; }
+
+.chapter-label {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 0.76rem;
+  padding: 2px 6px 2px 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chapter-label:disabled { cursor: default; }
+
+.chapter-chip.picked { border-color: var(--color-ship); }
+.chapter-chip.active .chapter-label,
+.chapter-chip.active .chapter-check { color: #06101f; }

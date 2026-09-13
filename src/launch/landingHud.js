@@ -17,7 +17,7 @@ export function createLandingHud(container) {
     <div class="landing-phase" id="landing-phase">하강 중</div>
     <div class="landing-grid">
       <div><span>고도</span><b id="landing-altitude">-</b></div>
-      <div><span>하강 속도</span><b id="landing-speed">-</b></div>
+      <div><span id="landing-speed-label">하강 속도</span><b id="landing-speed">-</b></div>
       <div><span>표면 중력</span><b id="landing-gravity">-</b></div>
       <div><span>남은 시간</span><b id="landing-eta">-</b></div>
     </div>
@@ -31,6 +31,19 @@ export function createLandingHud(container) {
    */
   function update(info) {
     el('landing-body').textContent = info.bodyName;
+    el('landing-speed-label').textContent = info.ascending ? '상승 속도' : '하강 속도';
+    if (info.ascending) {
+      // 이륙 중 (20단계, D-80)
+      el('landing-phase').textContent = info.altitude < 200 ? '이륙'
+        : info.altitude < 5_000 ? '상승 가속' : '궤도 진입 준비';
+      el('landing-altitude').textContent = info.altitude >= 1000
+        ? `${formatNumber(info.altitude / 1000, 2)} km` : `${formatNumber(info.altitude, 0)} m`;
+      el('landing-speed').textContent = `${formatNumber(info.speed, 1)} m/s`;
+      el('landing-gravity').textContent = `${formatNumber(info.gravity, 2)} m/s²`;
+      el('landing-eta').textContent = '-';
+      el('landing-body').textContent = `${info.bodyName} 이륙`;
+      return;
+    }
     el('landing-phase').textContent = info.landed ? '접지 완료'
       : info.altitude > 55_000 ? '대기권 진입'
       : info.altitude > 25_000 ? '플라스마 구간 (열 차폐)'

@@ -477,7 +477,7 @@ export function createCruiseScene(container) {
   function applyLayout() {
     if (viewMode === 'wide') {
       // 지도처럼 본다: 지구와 목적지를 양 끝에 같은 크기로 두고, 우주선을 진행률 위치에 놓는다
-      ship.scale.setScalar(46);
+      ship.scale.setScalar(16);
       ship.position.set(0, 0, -VIEW_DISTANCE + 2 * VIEW_DISTANCE * lastFraction);
       for (const [model, z] of [[earthModel, -VIEW_DISTANCE], [targetModel, VIEW_DISTANCE]]) {
         if (!model) continue;
@@ -553,6 +553,10 @@ export function createCruiseScene(container) {
      */
     setProgress(journey, betaValue) {
       lastJourney = journey;
+      // 20단계 수정: 갈 때는 목적지(+Z), 돌아올 때는 지구(−Z)를 향하도록 기수를 돌린다.
+      // 뒤로 미끄러지듯 보이던 문제를 없앤다
+      const heading = journey.outbound ? 0 : Math.PI;
+      ship.rotation.y = heading + (viewMode === 'wide' ? 0 : -0.55);
       const span = journey.fromEarth + journey.toTarget;
       lastFraction = span > 0 ? Math.min(Math.max(journey.fromEarth / span, 0), 1) : 0;
       refreshBodies();

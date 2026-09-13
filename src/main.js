@@ -74,6 +74,8 @@ const state = {
   // 20단계
   crashed: false,      // 착륙 실패 (D-75)
   evaTasks: {},        // 탐사 임무 id → 수행 여부 (D-77)
+  liftoffProgress: 0,  // 목적지 이륙 진행률 (D-80)
+  startChapter: 'launch',  // 체크한 시작 지점 (20단계)
 };
 
 // 걷기 입력 (20단계). 키를 누르고 있는 동안 유지된다
@@ -85,6 +87,8 @@ const LANDING_START_ALTITUDE = 2_000;
 const LANDING_SECONDS = 10;
 // 지구 재진입은 80 km에서 시작하므로 더 길게 보여준다 (D-66)
 const REENTRY_SECONDS = 18;
+// 목적지에서 다시 떠오르는 연출 (20단계, D-80). 착륙의 반대 순서로 올라간다
+const LIFTOFF_SECONDS = 8;
 
 const el = (id) => document.getElementById(id);
 
@@ -96,7 +100,11 @@ const survivalIcons = createSurvivalIcons(el('survival-container'));
 
 // ---- 임무 조작 막대 ----
 const missionBar = createMissionBar(el('mission-bar-container'), {
-  onLaunch: () => startLaunch(),
+  onLaunch: () => {
+    // 체크한 시작 지점이 발사가 아니면 그 구간부터 재생한다 (20단계)
+    if (state.startChapter && state.startChapter !== 'launch') { playChapter(state.startChapter); return; }
+    startLaunch();
+  },
   onReset: () => resetMission(),
   onTogglePlay: () => { state.playing = !state.playing; syncBar(); },
   onScrub: (p) => {
@@ -106,13 +114,19 @@ const missionBar = createMissionBar(el('mission-bar-container'), {
     const turnAt = state.tripType === TRIP_TYPES.ROUND_TRIP ? 0.5 : 1;
     state.visitedTarget = p >= turnAt;   // 반환점을 지난 지점으로 끌면 이미 다녀온 것으로 본다
     setProgress(p);
-    if (p >= 1) finishCruise(); else if (state.phase === 'arrived') { state.phase = 'cruise'; }
+    if (p >= 1) {
+      if (state.tripType === TRIP_TYPES.ROUND_TRIP && state.landing) startReentry();
+      else finishCruise();
+    } else if (state.phase === 'arrived') { state.phase = 'cruise'; }
     syncBar();
   },
   onTimeScale: (n) => { state.timeScale = n; state.launch?.timeline.setTimeScale(Math.max(1, Math.round(n))); syncBar(); },
   onSkip: () => {
     if (state.phase === 'launch') { state.launch?.skip(); return; }
-    if (state.phase === 'landing' || state.phase === 'reentry') { updateLanding(1); finishLanding(); return; }
+    if (state.phase === 'liftoff') {
+      const next = state.liftoffProgress + (dt * Math.min(Math.max(state.timeScale, 0.5), 3)) / LIFTOFF_SECONDS;
+      if (next >= 1) { updateLiftoff(1); finishLiftoff(); } else { updateLiftoff(next); }
+    } else if (state.phase === 'landing' || state.phase === 'reentry') { updateLanding(1); finishLanding(); return; }
     if (state.phase === 'cruise') {
       const roundTrip = state.tripType === TRIP_TYPES.ROUND_TRIP;
       if (!state.visitedTarget) { setProgress(roundTrip ? 0.5 : 1); reachTarget(); return; }
@@ -161,6 +175,13 @@ function refreshAscent() {
 // ---- 임무 구간 칩 (18단계, D-65) ----
 const chapters = createMissionChapters(el('mission-chapters'), {
   onSelect: (id) => playChapter(id),
+  onPick: (id) => {
+    // 체크한 구간이 "시작 지점"이 된다. 발사 버튼을 누르면 무조건 여기서 출발한다 (20단계)
+    state.startChapter = id;
+    const chapter = state.chapters.find((c) => c.id === id);
+    setSubtitle(`시작 지점: ${chapter?.label ?? id} — 발사 버튼을 누르면 여기서 출발합니다.`);
+    syncBar();
+  },
 });
 
 function refreshChapters() {
@@ -213,6 +234,8 @@ function syncBar() {
     playing: state.playing,
     timeScale: state.timeScale,
     ready: Boolean(state.launch && state.result),
+    startLabel: state.chapters.find((c) => c.id === state.startChapter)?.label,
+    startsAtLaunch: !state.startChapter || state.startChapter === 'launch',
   });
   if (state.chapters.length) chapters.setCurrent(currentChapter(state.chapters, state));
 }
@@ -540,24 +563,73 @@ function doEvaTask() {
   refreshEva();
 }
 
-/** 탐사를 마치고 다음 단계로 (왕복이면 귀환, 편도면 종료) */
+/**
+ * 탐사를 마치고 우주선에 탑승 → 이륙 (20단계, D-80).
+ * 편도면 여기서 여행이 끝나고, 왕복이면 실제로 지표에서 떠올라 지구로 향한다.
+ */
 function finishEva() {
   evaPanel?.setVisible(false);
-  if (state.tripType === TRIP_TYPES.ROUND_TRIP) {
-    state.landing?.hide();
-    state.landing?.stop();
-    state.landing?.resetScene();
-    state.cruise?.show();
-    state.cruise?.start();
-    cruiseHud?.setVisible(true);
-    state.phase = 'cruise';
-    state.playing = true;
-    setMood('cruise');
-    setSubtitle(`${state.landingBody?.name ?? '목적지'}에서 이륙 — 지구로 돌아갑니다.`);
-    syncBar();
-  } else {
-    finishCruise();
-  }
+  if (state.tripType !== TRIP_TYPES.ROUND_TRIP) { finishCruise(); return; }
+  startLiftoff();
+}
+
+/** 목적지 지표에서 이륙한다. 착륙의 반대 순서로 올라간다 */
+function startLiftoff() {
+  if (!state.landing) return;
+  state.phase = 'liftoff';
+  state.liftoffProgress = 0;
+  state.playing = false;
+  evaPanel?.setVisible(false);
+  checklist?.setVisible(false);
+  landingHud?.setVisible(true);
+  state.landing.show();
+  state.landing.start();
+  state.landing.setCameraMode(state.view);
+  setMood('launch');
+  audio.boom();
+  audio.setEngine(1);
+  setSubtitle(`${state.landingBody?.name ?? '목적지'}에서 이륙 — 우주선에 탑승해 지구로 돌아갑니다.`);
+  updateLiftoff(0);
+  syncBar();
+}
+
+/** 이륙 진행: 고도는 착륙 프로파일을 거꾸로 쓴다 */
+function updateLiftoff(t) {
+  state.liftoffProgress = Math.min(Math.max(t, 0), 1);
+  const start = landingStartAltitude();
+  const g = landingGravity();
+  // 착륙 프로파일의 시간을 뒤집으면 그대로 상승 곡선이 된다
+  const d = descentProfile(1 - state.liftoffProgress, start, g);
+  state.landing?.setLiftoff({ altitude: d.altitude, speed: d.speed });
+  landingHud?.update({
+    bodyName: state.landingBody?.name ?? '목적지',
+    altitude: d.altitude,
+    speed: d.speed,
+    gravity: g,
+    remaining: 0,
+    landed: false,
+    ascending: true,
+  });
+  audio.setEngine(0.9);
+}
+
+/** 이륙이 끝나면 항행(귀환)으로 넘어간다 */
+function finishLiftoff() {
+  audio.setEngine(0.2);
+  state.landing?.hide();
+  state.landing?.stop();
+  state.landing?.resetScene();
+  landingHud?.setVisible(false);
+  state.cruise?.show();
+  state.cruise?.start();
+  state.cruise?.setCameraMode(state.view);
+  cruiseHud?.setVisible(true);
+  state.phase = 'cruise';
+  state.visitedTarget = true;
+  state.playing = true;
+  setMood('cruise');
+  setSubtitle('지구로 귀환 중 — 도착하면 대기권에 다시 들어갑니다.');
+  syncBar();
 }
 
 /** 착륙에 실패했을 때 다시 시도 */
@@ -592,6 +664,7 @@ function resetMission() {
   state.landingBody = null;
   state.crashed = false;
   state.evaTasks = {};
+  state.liftoffProgress = 0;
   evaPanel?.setVisible(false);
   state.landing?.resetScene();
   state.aimSeconds = 0;
@@ -623,7 +696,10 @@ function startTicker() {
   const tick = (now) => {
     const dt = Math.min((now - last) / 1000, 0.5);
     last = now;
-    if (state.phase === 'landing' || state.phase === 'reentry') {
+    if (state.phase === 'liftoff') {
+      const next = state.liftoffProgress + (dt * Math.min(Math.max(state.timeScale, 0.5), 3)) / LIFTOFF_SECONDS;
+      if (next >= 1) { updateLiftoff(1); finishLiftoff(); } else { updateLiftoff(next); }
+    } else if (state.phase === 'landing' || state.phase === 'reentry') {
       // 착륙 연출은 임무 시계를 멈추고 따로 진행한다
       // 착륙은 절차를 직접 수행해야 하므로 배속을 2배까지만 적용한다 (D-67)
       const landingScale = Math.min(Math.max(state.timeScale, 0.5), 2);
@@ -771,7 +847,7 @@ window.__state = state;
 window.__mission = {
   setProgress, enterCruise, finishCruise, resetMission, reachTarget, updateLanding,
   finishLanding, setView, playChapter, startReentry, doLandingStep, jumpToAscentStep,
-  startEva, doEvaTask, finishEva, retryLanding,
+  startEva, doEvaTask, finishEva, retryLanding, startLiftoff, finishLiftoff,
 };
 
 // ---- 걷기·수행 키 (20단계) ----

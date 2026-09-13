@@ -38,7 +38,7 @@
 | 17 | 시점 전환(1인칭·3인칭·광역), Web Audio 배경음악·효과음, 발사장 구글지도, 달·화성 착륙씬, 왕복 연출 | `src/ui/viewControls.js`, `launchSiteMap.js`, `src/audio/spaceAudio.js`, `src/launch/landingScene.js`, `landingHud.js` |
 | 18 | 지구 재착륙, 구간 클릭 재생, 발사 단축(5배속+자동 전환), 로런츠 곡선, 조종석 1인칭과 자세 조종, 거리 기준 재생 시간(5~60초), KSP식 착륙 절차와 등급, 캔버스 지구 표면, 현실감 있는 로켓 | `src/physics/missionTimeline.js`, `landingMission.js`, `src/ui/lorentzChart.js`, `missionChapters.js`, `landingChecklist.js`, `src/launch/cockpit.js`, `earthTexture.js`, `src/data/earthOutline.js` |
 | 19 | 상승 이정표 7개와 건너뛰기(숫자키 1~7), 3인칭·광역에서 마우스 우클릭 시점 회전 | `src/physics/ascentMission.js`, `src/ui/ascentChecklist.js`, `launchController.js` |
-| 20 | 우주인 지표 탐사(임무 5개), 착륙 실패 폭발과 다시 시도, 심우주 탐사선 형상, 선내 재현 | `src/physics/exploration.js`, `src/ui/evaPanel.js`, `src/launch/spacecraftModel.js`, `interior.js`, `landingScene.js` |
+| 20 | 우주인 지표 탐사(임무 5개), 착륙 실패 폭발과 다시 시도, 심우주 탐사선 형상, 선내 재현, 목적지 이륙과 지구 귀환, 시작 지점 체크 | `src/physics/exploration.js`, `src/ui/evaPanel.js`, `src/launch/spacecraftModel.js`, `interior.js`, `landingScene.js` |
 | 기능 2 계획 | 로켓 설계 프로그램 인수 문서, JSON 계약 예제 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md), `docs/examples/falcon_heavy.rocket.json` |
 
 ## 3. 다음 할 일: 16단계 설계한 로켓 불러오기 (아직 시작 안 함)
@@ -48,6 +48,8 @@
 - 미결: 설계 저장소 주소(Q-23), 부품 목록 주체(Q-21).
 
 20단계에서 알게 된 것:
+- 탐사를 마친 뒤 항행 화면으로 바로 넘기면 "뒤로 감기"처럼 보인다. 지표에서 실제로 떠오르는 이륙 연출을 넣어야 자연스럽다 (D-80). 착륙 프로파일을 시간축으로 뒤집으면 그대로 상승 곡선이 된다.
+- 귀환 구간에서는 우주선 기수를 180° 돌려야 한다 (D-81).
 - **방침 변경**: 착륙 실패(폭발)를 도입했다 (D-75). D-41·D-67의 "항상 성공"은 목적지·지구 착륙에서는 더 이상 적용되지 않는다. 부스터·코어 회수는 그대로 항상 성공.
 - 파손 뒤에도 시계가 계속 돌면 `finishLanding`이 반복 호출되어 "다시 시도" 버튼이 매 프레임 다시 만들어진다. `phase = 'crashed'`로 시계를 멈춘다.
 - 선내는 카메라의 자식이 아니라 **장면에 고정**해야 고개를 돌릴 때 방이 따라 돌지 않는다.

@@ -69,7 +69,7 @@ export function createEvaPanel(container, handlers) {
     resultEl.innerHTML = `
       <b>탐사 완료 ${score.doneCount} / ${score.total}</b>
       <div class="grade-notes">표면 중력 ${formatNumber(gravity, 2)} m/s² · 점프 높이 ${formatNumber(jumpHeight, 2)} m</div>
-      <button type="button" class="checklist-auto" id="eva-finish">여행 마치기</button>
+      <button type="button" class="checklist-auto" id="eva-finish">🚀 우주선 타기</button>
     `;
     resultEl.querySelector('#eva-finish').addEventListener('click', () => handlers.onFinish());
   }

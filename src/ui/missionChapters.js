@@ -4,8 +4,10 @@
 
 /**
  * @param {HTMLElement} container
- * @param {{ onSelect: (chapterId: string) => void }} handlers
- * @returns {{ setChapters: (list: Array) => void, setCurrent: (id: string) => void }}
+ * @param {{ onSelect: (chapterId: string) => void, onPick: (chapterId: string) => void }} handlers
+ *   onSelect: 칩 본문을 눌렀을 때 — 그 장면을 바로 재생한다
+ *   onPick:   체크 상자를 눌렀을 때 — 그 구간을 "시작 지점"으로 정한다 (20단계)
+ * @returns {object}
  */
 export function createMissionChapters(container, handlers) {
   const row = document.createElement('div');
@@ -13,26 +15,58 @@ export function createMissionChapters(container, handlers) {
   container.appendChild(row);
 
   const buttons = new Map();
+  const boxes = new Map();
+  let picked = 'launch';   // 시작 지점 (기본은 발사)
 
   function setChapters(list) {
     row.innerHTML = '';
     buttons.clear();
+    boxes.clear();
     for (const chapter of list) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'chapter-chip';
-      b.textContent = chapter.label;
-      b.title = chapter.hint;
-      b.disabled = !chapter.enabled;
-      b.addEventListener('click', () => handlers.onSelect(chapter.id));
-      row.appendChild(b);
-      buttons.set(chapter.id, b);
+      const chip = document.createElement('span');
+      chip.className = 'chapter-chip';
+      if (!chapter.enabled) chip.classList.add('disabled');
+      chip.title = chapter.hint;
+
+      const box = document.createElement('button');
+      box.type = 'button';
+      box.className = 'chapter-check';
+      box.title = '여기를 시작 지점으로';
+      box.textContent = '○';
+      box.disabled = !chapter.enabled;
+      box.addEventListener('click', (e) => { e.stopPropagation(); pick(chapter.id); handlers.onPick(chapter.id); });
+
+      const label = document.createElement('button');
+      label.type = 'button';
+      label.className = 'chapter-label';
+      label.textContent = chapter.label;
+      label.disabled = !chapter.enabled;
+      label.addEventListener('click', () => handlers.onSelect(chapter.id));
+
+      chip.appendChild(box);
+      chip.appendChild(label);
+      row.appendChild(chip);
+      buttons.set(chapter.id, chip);
+      boxes.set(chapter.id, box);
+    }
+    if (!boxes.has(picked)) picked = 'launch';
+    pick(picked);
+  }
+
+  /** 시작 지점 표시를 바꾼다 */
+  function pick(id) {
+    picked = id;
+    for (const [key, box] of boxes) {
+      const on = key === id;
+      box.textContent = on ? '●' : '○';
+      box.classList.toggle('picked', on);
+      buttons.get(key)?.classList.toggle('picked', on);
     }
   }
 
   function setCurrent(id) {
-    for (const [key, b] of buttons) b.classList.toggle('active', key === id);
+    for (const [key, chip] of buttons) chip.classList.toggle('active', key === id);
   }
 
-  return { setChapters, setCurrent };
+  return { setChapters, setCurrent, pick, get picked() { return picked; } };
 }
