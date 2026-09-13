@@ -14,22 +14,42 @@ import { guideBody, predictedDownrange } from './landingGuidance.js';
 const ATMOSPHERE_SCALE_HEIGHT = 8_400;
 
 /**
- * 기본 피치 프로그램 (D-40): 발사 10초까지 수직, 이후 서서히 수평 쪽으로.
+ * 기본 피치 프로그램 (D-40, 21단계에서 D-92로 다시 맞춤): 발사 12초까지 수직, 이후 서서히 수평 쪽으로.
  * 반환값은 국소 수직에서 진행 방향으로 기울인 각도(라디안). 0 = 수직, π/2 = 수평
- * 지속시간 200초, 최종 85°는 팔콘 헤비 제원으로 실험해 정한 값이다 (P-05).
- * 120초로 눕히면 2단 연소가 끝나기 전에 추락하고, 200초·85°이면 연소 종료 시 고도 약 490 km, 속도 약 11 km/s가 된다.
+ *
+ * 값의 근거: 팔콘 헤비 제원으로 여러 조합을 돌려 **실제 저궤도 투입과 같은 결과**가 나오는 값을 골랐다 (P-05).
+ *   12초 · 170초 · 86° → 궤도 진입 시점에 고도 235 km, 속도 7.77 km/s, 상승 속도 거의 0.
+ *   그 고도의 원궤도 속도(7.77 km/s)와 일치하므로 실제로 원에 가까운 궤도에 오른다.
+ *   너무 빨리 눕히면(140초 이하) 수직 속도를 잃고 추락하고, 너무 늦게 눕히면(200초 이상)
+ *   위로만 솟아 고도 400 km를 넘으면서도 옆으로 도는 속도를 얻지 못한다.
+ *
+ * 왜 눕히는가: 궤도에 오른다는 것은 "높이 올라가는 것"이 아니라 "옆으로 아주 빨라지는 것"이다.
+ *   그래서 로켓은 처음에만 수직으로 오르고 곧 옆으로 기울여, 고도는 완만해지고 속도만 계속 붙는다.
+ *   화면의 고도가 후반에 천천히 오르는 것은 이 때문이다 (docs/03_physics.md 6.2절).
+ *
  * @param {number} t  발사 후 경과 시간 (s)
  */
 export function defaultPitchProgram(t) {
-  const VERTICAL_UNTIL = 10;
-  const TURN_DURATION = 200;
-  const FINAL_PITCH = (85 * Math.PI) / 180;
+  const VERTICAL_UNTIL = 12;
+  const TURN_DURATION = 170;
+  const FINAL_PITCH = (86 * Math.PI) / 180;
   if (t < VERTICAL_UNTIL) return 0;
   const k = Math.min((t - VERTICAL_UNTIL) / TURN_DURATION, 1);
   // 부드럽게 (처음엔 천천히, 끝에서 천천히)
   const smooth = k * k * (3 - 2 * k);
   return FINAL_PITCH * smooth;
 }
+
+/**
+ * 그 고도에서 원궤도를 도는 데 필요한 속도 (m/s). v = √(GM / r)
+ * @param {number} altitudeM  고도 (m)
+ */
+export function circularOrbitSpeed(altitudeM) {
+  return Math.sqrt(EARTH_GM / (EARTH_RADIUS + Math.max(altitudeM, 0)));
+}
+
+// 2단 연소 종료(SECO) 판정 기준: 이 고도를 넘고 원궤도 속도에 도달하면 엔진을 끈다 (D-92)
+const SECO_MIN_ALTITUDE = 120_000;
 
 /**
  * 고도에 따른 엔진 1개의 추력
@@ -266,6 +286,23 @@ export function createLaunchSimulation(spec, options = {}) {
     // 분리된 물체들도 같은 시간만큼 전진
     for (const body of bodies) integrateBody(body, h);
 
+    // ---- 궤도 진입(SECO): 원궤도 속도에 닿으면 엔진을 끈다 (21단계, D-92) ----
+    // 실제 로켓도 연료를 끝까지 태우지 않는다. 필요한 속도에 닿는 순간 끄고 남은 연료는 여유로 남긴다.
+    // 이 판정이 없으면 팔콘 헤비의 넉넉한 2단이 계속 타면서 탈출 속도(11 km/s)까지 올라가 버린다.
+    if (!complete && altitude() > SECO_MIN_ALTITUDE) {
+      const speed = Math.hypot(vehicle.v.x, vehicle.v.y);
+      if (speed >= circularOrbitSpeed(altitude())) {
+        for (const s of stages) s.burning = false;
+        vehicle.thrust = 0;
+        complete = true;
+        pendingEvents.push({
+          type: 'complete', reason: 'orbit', time,
+          state: { r: { ...vehicle.r }, v: { ...vehicle.v } },
+        });
+        return;
+      }
+    }
+
     // 단 분리: 연소 중이던 단이 예비 추진제까지 다 썼으면 분리
     let separated = false;
     for (const s of stages) {
@@ -317,6 +354,18 @@ export function createLaunchSimulation(spec, options = {}) {
     getTime: () => time,
     getAltitude: altitude,
     getSpeed: () => Math.hypot(vehicle.v.x, vehicle.v.y),
+    // 상승 속도(수직 성분) = 속도 벡터를 국소 수직으로 사영한 값. 고도는 정확히 이 속도로 오른다 (D-92)
+    getVerticalSpeed: () => {
+      const rNorm = Math.hypot(vehicle.r.x, vehicle.r.y);
+      if (rNorm === 0) return 0;
+      return (vehicle.v.x * vehicle.r.x + vehicle.v.y * vehicle.r.y) / rNorm;
+    },
+    // 수평 속도(다운레인지 성분). 궤도에 오른다는 것은 이 값을 원궤도 속도까지 키우는 일이다
+    getHorizontalSpeed: () => {
+      const rNorm = Math.hypot(vehicle.r.x, vehicle.r.y);
+      if (rNorm === 0) return 0;
+      return (vehicle.v.x * vehicle.r.y - vehicle.v.y * vehicle.r.x) / rNorm;
+    },
     // 발사장에서 잰 다운레인지 각도 (rad). 화면 배치에 쓴다
     getDownrangeAngle: () => Math.atan2(vehicle.r.x, vehicle.r.y),
     isComplete: () => complete,

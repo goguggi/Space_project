@@ -30,6 +30,7 @@ export function createLaunchHud(container, handlers) {
     <div class="hud-row hud-stats">
       <span>고도 <b id="hud-altitude">0.0 km</b></span>
       <span>속도 <b id="hud-speed">0.00 km/s</b></span>
+      <span title="속도의 수직 성분. 고도는 정확히 이 속도로 오른다">상승 <b id="hud-vspeed">0 m/s</b></span>
       <span>질량 <b id="hud-mass">0 t</b></span>
     </div>
     <div class="hud-row hud-controls">
@@ -88,6 +89,9 @@ export function createLaunchHud(container, handlers) {
     el('hud-altitude').textContent = `${formatNumber(sim.getAltitude() / 1000, 1)} km`;
     el('hud-speed').textContent = `${formatNumber(sim.getSpeed() / 1000, 2)} km/s`;
     el('hud-mass').textContent = `${formatNumber(sim.getMass() / 1000, 0)} t`;
+    // 21단계(D-92): 고도가 왜 그렇게 오르는지 보이도록 상승 속도(수직 성분)를 함께 띄운다.
+    // 로켓이 옆으로 누울수록 이 값이 줄고, 그만큼 고도 곡선도 완만해진다.
+    el('hud-vspeed').textContent = `${formatNumber(sim.getVerticalSpeed?.() ?? 0, 0)} m/s`;
     for (const [n, b] of scaleButtons) b.classList.toggle('active', timeline.getTimeScale() === n);
 
     // 왼쪽 칸: 붙어 있는 단(발사 초반은 로켓 전체, 코어 분리 뒤에는 2단과 우주선)

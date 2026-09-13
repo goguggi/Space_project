@@ -66,3 +66,9 @@
 |---|---|
 | `exploration.js` | 우주인 지표 탐사. 임무 5개(깃발·표본 2·촬영·복귀), `walkParameters(중력)`(걷기 속도와 점프 높이 h = v₀²/2g), `taskInReach`, `nearestTask`, `explorationScore` (D-77) |
 | `landingMission.js`의 `judgeTouchdown(speed, legsOut)` | 접지 속도 6 m/s 초과 또는 다리 미전개면 파손 (D-75, D-76) |
+
+### 21단계에서 바뀐 것 (D-92)
+
+- `launchDynamics.js`: 피치 프로그램을 12초 수직 → 170초 동안 86°로 바꿨다. `circularOrbitSpeed(고도)`를 추가하고,
+  고도 120 km 위에서 그 속도에 닿으면 2단 엔진을 꺼 궤도 진입으로 끝낸다(SECO). 연료를 끝까지 태우지 않는다.
+- `getVerticalSpeed()` / `getHorizontalSpeed()`: 속도의 수직·수평 성분. 고도는 정확히 수직 성분만큼 오른다.

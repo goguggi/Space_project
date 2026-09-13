@@ -1140,3 +1140,80 @@ a { color: var(--color-accent); }
 .chapter-chip.picked { border-color: var(--color-ship); }
 .chapter-chip.active .chapter-label,
 .chapter-chip.active .chapter-check { color: #06101f; }
+
+/* ---- 도착 요약 카드 (21단계, D-93) ---- */
+.arrival-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  width: min(440px, calc(100% - 48px));
+  padding: 22px 24px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border-soft);
+  background: rgba(8, 12, 24, 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.arrival-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.arrival-route {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  color: var(--color-muted);
+}
+
+.arrival-times {
+  margin: 18px 0 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.arrival-times > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.arrival-times dt {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.arrival-times dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.arrival-times .arrival-gap {
+  background: rgba(79, 209, 160, 0.12);
+  border: 1px solid rgba(79, 209, 160, 0.28);
+}
+
+.arrival-times .arrival-gap dd { color: #7ff0c0; }
+
+.arrival-note {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+  margin-bottom: 16px;
+}
+
+.arrival-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}

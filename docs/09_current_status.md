@@ -15,7 +15,7 @@
 | 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21 |
 | 진행 중 | 없음. 다음은 **16단계 (설계한 로켓 불러오기)** |
 | 남은 단계 | 16 → 8 → 9 (순서는 [04_roadmap.md](04_roadmap.md)) |
-| 검증 | `tests/physics.test.html` 112 / 112 통과 |
+| 검증 | `tests/physics.test.html` 114 / 114 통과 |
 
 ## 2. 완료된 것
 
@@ -40,6 +40,7 @@
 | 19 | 상승 이정표 7개와 건너뛰기(숫자키 1~7), 3인칭·광역에서 마우스 우클릭 시점 회전 | `src/physics/ascentMission.js`, `src/ui/ascentChecklist.js`, `launchController.js` |
 | 20 | 우주인 지표 탐사(임무 5개), 착륙 실패 폭발과 다시 시도, 심우주 탐사선 형상, 선내 재현, 목적지 이륙과 지구 귀환, 시작 지점 체크 | `src/physics/exploration.js`, `src/ui/evaPanel.js`, `src/launch/spacecraftModel.js`, `interior.js`, `landingScene.js` |
 | 21 | 실감 나는 발사 화염과 발사대 연기, 사실적인 지구 표면과 구름층, NASA 사진 선택 적용, 연속으로 차오르는 진행 막대, 오르간·오스티나토·초침의 새 배경음(γ에 따라 늘어짐)과 "내 음악" 파일 재생 | `src/launch/rocketModel.js`, `padPlume.js`, `earthTexture.js`, `earthPhoto.js`, `src/physics/ascentMission.js`, `src/audio/spaceAudio.js`, `src/ui/viewControls.js` |
+| 21b | 실제 궤도 투입 곡선(중력 선회 + 원궤도 속도 SECO)과 HUD 상승 속도, 항행 화면 지구에 NASA 실사 텍스처, 도착 요약 카드 | `src/physics/launchDynamics.js`, `src/launch/launchHud.js`, `cruiseScene.js`, `src/ui/arrivalCard.js` |
 | 기능 2 계획 | 로켓 설계 프로그램 인수 문서, JSON 계약 예제 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md), `docs/examples/falcon_heavy.rocket.json` |
 
 ## 3. 다음 할 일: 16단계 설계한 로켓 불러오기 (아직 시작 안 함)

@@ -46,7 +46,7 @@ export const ASCENT_STEPS = [
     reached: (sim) => sim.getAltitude() >= 120_000,
   },
   {
-    id: 'orbit', label: '궤도 진입 · 우주선 출발', key: '7', kind: 'auto', nominalSeconds: 589,
+    id: 'orbit', label: '궤도 진입 · 우주선 출발', key: '7', kind: 'auto', nominalSeconds: 493,
     hint: '2단 연소가 끝나고 우주선이 목적지로 떠난다',
     reached: (sim) => sim.isComplete(),
   },

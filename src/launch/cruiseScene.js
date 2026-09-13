@@ -15,6 +15,8 @@
 
 import * as THREE from '../../lib/three/three.module.js';
 import { OrbitControls } from '../../lib/three/OrbitControls.js';
+import { createEarthTexture } from './earthTexture.js';
+import { loadEarthPhoto } from './earthPhoto.js';
 import { angularRadius, dopplerFactor, aberratedAngle } from '../physics/journey.js';
 import { displayRadius } from '../data/celestialBodies.js';
 import { createInterior } from './interior.js';
@@ -46,6 +48,21 @@ function makeGlowTexture(inner = 'rgba(255,255,255,1)', outer = 'rgba(255,255,25
 }
 
 /** 가로 줄무늬 텍스처 (목성·토성). 색을 밝기만 바꿔 가며 띠를 그린다 */
+// 지구 표면 텍스처는 한 번만 만들어 돌려 쓴다. NASA 사진을 찾으면 그때 조용히 갈아 끼운다 (D-88)
+let earthTextureCache = null;
+const earthMaterials = [];
+function earthSurfaceTexture() {
+  if (!earthTextureCache) {
+    earthTextureCache = createEarthTexture();
+    loadEarthPhoto().then((photo) => {
+      if (!photo) return;
+      earthTextureCache = photo;
+      for (const m of earthMaterials) { m.map = photo; m.needsUpdate = true; }
+    });
+  }
+  return earthTextureCache;
+}
+
 function makeBandTexture(baseColor) {
   const canvas = document.createElement('canvas');
   canvas.width = 8;
@@ -130,9 +147,13 @@ function createBodyModel(visual) {
   }
 
   // 행성·위성
-  const material = visual.bands
-    ? new THREE.MeshStandardMaterial({ map: makeBandTexture(color), roughness: 0.9, metalness: 0 })
-    : new THREE.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0 });
+  // 지구는 실사 텍스처(있으면 NASA 사진, 없으면 캔버스 그림)를 입힌다 (21단계, D-88)
+  const material = visual.surface === 'earth'
+    ? new THREE.MeshStandardMaterial({ map: earthSurfaceTexture(), roughness: 0.9, metalness: 0 })
+    : visual.bands
+      ? new THREE.MeshStandardMaterial({ map: makeBandTexture(color), roughness: 0.9, metalness: 0 })
+      : new THREE.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0 });
+  if (visual.surface === 'earth') earthMaterials.push(material);
   const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), material);
   group.add(sphere);
 

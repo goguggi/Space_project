@@ -15,6 +15,8 @@ export const CELESTIAL_BODIES = {
   earth: {
     name: '지구', kind: 'planet', radiusM: 6_371 * KM,
     color: 0x2f6f43, atmosphere: 0x4a8fe0, glow: 0,
+    // 21단계(D-88): 항행 화면에서 지구만은 실사 텍스처(NASA 블루마블)를 입힌다
+    surface: 'earth',
     // 18단계(D-66): 왕복의 마지막에 지구로 돌아와 내려앉는다
     landable: true, surfaceGravity: 9.81, reentry: true,
     landingStartAltitudeM: 80_000,   // 재진입 시작 고도 (카르만 선 위)

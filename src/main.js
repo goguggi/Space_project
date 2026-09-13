@@ -24,6 +24,7 @@ import { createLifespanChart } from './ui/lifespanChart.js';
 import { createSurvivalIcons } from './ui/survivalIcons.js';
 import { createMissionBar } from './ui/missionBar.js';
 import { createViewControls } from './ui/viewControls.js';
+import { createArrivalCard } from './ui/arrivalCard.js';
 import { createLaunchSiteMap } from './ui/launchSiteMap.js';
 import { createSpaceAudio } from './audio/spaceAudio.js';
 import { createLorentzChart } from './ui/lorentzChart.js';
@@ -133,6 +134,20 @@ const missionBar = createMissionBar(el('mission-bar-container'), {
       if (!state.visitedTarget) { setProgress(roundTrip ? 0.5 : 1); reachTarget(); return; }
       state.playing = false; setProgress(1); finishCruise();
     }
+  },
+});
+
+// ---- 도착 요약 카드 (21단계, D-93) ----
+// 여행이 끝나면 화면 가운데에 결과를 띄운다. 예전에는 자막 한 줄뿐이라 "아무것도 없는" 화면이었다.
+const arrivalCard = createArrivalCard(el('stage'), {
+  onReset: () => resetMission(),
+  onReplay: () => {
+    arrivalCard.hide();
+    state.playing = false;
+    setProgress(0);
+    state.phase = 'cruise';
+    state.playing = true;
+    syncBar();
   },
 });
 
@@ -336,6 +351,7 @@ function currentJourney() {
 
 /** 진행률을 정하고, 연결된 모든 화면을 같은 시각으로 맞춘다 (D-55) */
 function setProgress(p) {
+  if (state.phase !== 'arrived') arrivalCard.hide();
   state.progress = Math.min(Math.max(p, 0), 1);
   if (!state.result || !state.destination) return;
   const j = currentJourney();
@@ -695,6 +711,21 @@ function finishCruise() {
   setSubtitle(back
     ? '지구로 돌아왔습니다. 슬라이더를 끌면 여행의 어느 순간이든 다시 볼 수 있습니다.'
     : '도착했습니다. 슬라이더를 끌면 여행의 어느 순간이든 다시 볼 수 있습니다.');
+
+  // 도착 요약 카드 (21단계, D-93)
+  if (state.result) {
+    const g = gamma(state.speed ?? 0);
+    arrivalCard.show({
+      destination: state.destination?.name ?? '목적지',
+      roundTrip: back,
+      earthSeconds: state.result.earthTime,
+      shipSeconds: state.result.shipTime,
+      gamma: g,
+      note: g > 1.0001
+        ? `광속의 ${(toBeta(state.speed ?? 0) * 100).toFixed(2)}%로 날아 로런츠 인자 γ = ${g.toFixed(4)}. 우주선 안에서는 시간이 그만큼 천천히 흘렀습니다.`
+        : '이 속도에서는 시간 지연이 거의 없습니다. 속도를 올려 다시 떠나 보세요.',
+    });
+  }
   setMood('arrived');
   audio.setEngine(0);
   audio.chime();
@@ -702,6 +733,7 @@ function finishCruise() {
 }
 
 function resetMission() {
+  arrivalCard.hide();
   state.landing?.releaseLook();
   state.phase = 'ready';
   state.playing = false;

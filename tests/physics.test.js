@@ -5,7 +5,7 @@
 import { SPEED_OF_LIGHT, LIGHT_YEAR, SECONDS_PER_YEAR } from '../src/data/constants.js';
 import { gamma, gammaMinusOne } from '../src/physics/lorentz.js';
 import { computeTimeDilation, TRIP_TYPES } from '../src/physics/timeDilation.js';
-import { createLaunchSimulation } from '../src/physics/launchDynamics.js';
+import { circularOrbitSpeed, createLaunchSimulation } from '../src/physics/launchDynamics.js';
 import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
 import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.js';
 import { journeyAt, angularRadius, dopplerFactor, aberratedAngle, beta } from '../src/physics/journey.js';
@@ -80,7 +80,12 @@ const coreSep = fhEvents.find((e) => e.type === 'separation' && e.stageId === 'c
 cases.push(['팔콘 헤비 부스터 분리 시각 (s, 실제 약 150)', 150, boosterSep ? boosterSep.time : 0, 0.15]);
 cases.push(['팔콘 헤비 코어 분리 시각 (s, 실제 약 185)', 185, coreSep ? coreSep.time : 0, 0.15]);
 cases.push(['팔콘 헤비 2단 종료 고도 ≥ 200 km (km)', 200, Math.min(upperBurnoutAltitude / 1000, 200), 1e-6]);
-cases.push(['팔콘 헤비 2단 종료 속도 ≥ 7.8 km/s (km/s)', 7.8, Math.min(upperBurnoutSpeed / 1000, 7.8), 1e-6]);
+// 21단계(D-92): 연료를 다 태우는 대신 원궤도 속도에 닿으면 엔진을 끈다.
+// 그래서 "7.8 km/s 이상"이 아니라 "그 고도의 원궤도 속도와 같은가"로 확인한다.
+cases.push(['팔콘 헤비 2단 종료 속도 = 그 고도의 원궤도 속도 (km/s)',
+  circularOrbitSpeed(upperBurnoutAltitude) / 1000, upperBurnoutSpeed / 1000, 2e-3]);
+cases.push(['원궤도 속도: 지표에서 약 7.91 km/s', 7.905, circularOrbitSpeed(0) / 1000, 1e-3]);
+cases.push(['원궤도 속도: 고도 400 km에서 약 7.67 km/s', 7.669, circularOrbitSpeed(400_000) / 1000, 1e-3]);
 cases.push(['팔콘 헤비 추락 없음 (1 = 정상)', 1, fhEvents.some((e) => e.type === 'crash') ? 0 : 1, 1e-9]);
 
 // ---- 재착륙 (13단계): 부스터는 착륙장(2,000 m), 코어는 무인선에 3 m/s 이하로 내려앉아야 한다 (docs/03_physics.md 6.5절, D-41) ----
