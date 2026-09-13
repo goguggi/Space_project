@@ -128,6 +128,8 @@ const missionBar = createMissionBar(el('mission-bar-container'), {
   onTimeScale: (n) => { state.timeScale = n; state.launch?.timeline.setTimeScale(Math.max(1, Math.round(n))); syncBar(); },
   onSkip: () => {
     if (state.phase === 'launch') { state.launch?.skip(); return; }
+    // 탐사 중 건너뛰기 = 바로 우주선 탑승 (21단계, D-96)
+    if (state.phase === 'eva') { finishEva(); return; }
     if (state.phase === 'liftoff') {
       syncBar();
       const next = state.liftoffProgress + (dt * Math.min(Math.max(state.timeScale, 0.5), 3)) / LIFTOFF_SECONDS;

@@ -1217,3 +1217,9 @@ a { color: var(--color-accent); }
   justify-content: center;
   flex-wrap: wrap;
 }
+
+/* 탐사 중 언제든 배로 돌아가는 단추 (21단계, D-96) */
+.eva-board {
+  margin-top: 10px;
+  width: 100%;
+}

@@ -20,9 +20,13 @@ export function createEvaPanel(container, handlers) {
     </div>
     <ul class="checklist-items" id="eva-items"></ul>
     <div class="eva-status" id="eva-status">착륙선 밖으로 나왔습니다.</div>
+    <!-- 21단계(D-96): 임무를 다 하지 않아도 언제든 배로 돌아갈 수 있다 -->
+    <button type="button" class="checklist-auto eva-board" id="eva-board">🚀 지금 우주선 타기</button>
     <div class="eva-result" id="eva-result" hidden></div>
   `;
   container.appendChild(box);
+
+  box.querySelector('#eva-board').addEventListener('click', () => handlers.onFinish());
 
   const listEl = box.querySelector('#eva-items');
   const statusEl = box.querySelector('#eva-status');
@@ -65,6 +69,7 @@ export function createEvaPanel(container, handlers) {
   }
 
   function showResult(score, gravity, jumpHeight) {
+    box.querySelector('#eva-board').hidden = true;
     resultEl.hidden = false;
     resultEl.innerHTML = `
       <b>탐사 완료 ${score.doneCount} / ${score.total}</b>
@@ -77,6 +82,10 @@ export function createEvaPanel(container, handlers) {
   return {
     update,
     showResult,
-    setVisible(on) { box.hidden = !on; if (!on) resultEl.hidden = true; },
+    setVisible(on) {
+      box.hidden = !on;
+      if (!on) resultEl.hidden = true;
+      if (on) box.querySelector('#eva-board').hidden = false;
+    },
   };
 }
