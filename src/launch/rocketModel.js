@@ -30,8 +30,41 @@ const bodyMaterial = new THREE.MeshStandardMaterial({ map: makeHullTexture(), ro
 const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x1b2033, roughness: 0.85, metalness: 0.05 });
 const metalMaterial = new THREE.MeshStandardMaterial({ color: 0x8d94a6, roughness: 0.35, metalness: 0.85 });
 const sootMaterial = new THREE.MeshStandardMaterial({ color: 0x14161d, roughness: 0.95 });
-const flameMaterial = new THREE.MeshBasicMaterial({ color: 0xffa64d, transparent: true, opacity: 0.85 });
-const flameCoreMaterial = new THREE.MeshBasicMaterial({ color: 0x9fd8ff, transparent: true, opacity: 0.95 });
+// ---- 화염 재질 (21단계) ----
+// 실제 로켓 배기는 세 겹으로 보인다: 노즐 바로 아래의 하얗게 타는 심,
+// 그 둘레의 주황 불꽃, 바깥으로 흩어지는 옅은 연기. 겹칠수록 밝아지도록 가산 혼합을 쓴다.
+const flameMaterial = new THREE.MeshBasicMaterial({
+  color: 0xff8c2a, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false,
+});
+const flameMidMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffd27a, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false,
+});
+const flameCoreMaterial = new THREE.MeshBasicMaterial({
+  color: 0xdcefff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false,
+});
+const flameHazeMaterial = new THREE.MeshBasicMaterial({
+  color: 0xff6a1e, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false,
+});
+
+/** 노즐 주변 발광용 원형 그라데이션 (스프라이트에 붙인다) */
+function makeGlowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,240,200,0.95)');
+  g.addColorStop(0.25, 'rgba(255,168,64,0.55)');
+  g.addColorStop(0.6, 'rgba(255,96,20,0.18)');
+  g.addColorStop(1, 'rgba(255,80,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+const glowTexture = makeGlowTexture();
 
 function makePart(part) {
   const [w, h] = part.size;
@@ -92,28 +125,89 @@ function makePart(part) {
 
 function makeFlame(diameterM) {
   const group = new THREE.Group();
-  // 바깥 주황 불꽃
-  const outer = new THREE.Mesh(new THREE.ConeGeometry((diameterM * 0.5) / S, (diameterM * 3.6) / S, 20), flameMaterial);
-  outer.rotation.x = Math.PI;
-  outer.position.y = -(diameterM * 1.8) / S;
-  // 안쪽 파란 심
-  const inner = new THREE.Mesh(new THREE.ConeGeometry((diameterM * 0.22) / S, (diameterM * 2.2) / S, 20), flameCoreMaterial);
-  inner.rotation.x = Math.PI;
-  inner.position.y = -(diameterM * 1.1) / S;
-  group.add(outer);
-  group.add(inner);
-  // 마하 디스크: 배기 흐름에 생기는 밝은 마디 세 개
-  for (let i = 0; i < 3; i += 1) {
+  const d = diameterM / S;          // 화면 단위로 잰 엔진부 지름
+
+  // 원뿔을 아래로 향하게 놓는 도우미. length 만큼 내려간다
+  const plume = (radius, length, material, offset = 0) => {
+    const mesh = new THREE.Mesh(new THREE.ConeGeometry(radius, length, 24, 1, true), material);
+    mesh.rotation.x = Math.PI;      // 꼭짓점이 아래로
+    mesh.position.y = -(length / 2) - offset;
+    return mesh;
+  };
+
+  // 1) 바깥 연기 기둥: 길고 옅게 퍼진다
+  const haze = plume(d * 0.75, d * 7.5, flameHazeMaterial);
+  // 2) 주황 불꽃
+  const outer = plume(d * 0.5, d * 4.4, flameMaterial);
+  // 3) 노란 중간층
+  const mid = plume(d * 0.32, d * 2.9, flameMidMaterial);
+  // 4) 하얗게 타는 심 (노즐 바로 아래)
+  const core = plume(d * 0.16, d * 1.7, flameCoreMaterial);
+  group.add(haze, outer, mid, core);
+
+  // 5) 마하 디스크: 초음속 배기에 생기는 밝은 마디 (docs/03_physics.md 참고)
+  const disks = [];
+  for (let i = 0; i < 4; i += 1) {
     const disk = new THREE.Mesh(
-      new THREE.SphereGeometry((diameterM * (0.16 - i * 0.03)) / S, 12, 8),
-      new THREE.MeshBasicMaterial({ color: 0xfff1c0, transparent: true, opacity: 0.55 - i * 0.12 }),
+      new THREE.SphereGeometry(d * (0.17 - i * 0.028), 14, 8),
+      new THREE.MeshBasicMaterial({
+        color: 0xfff4d2, transparent: true, opacity: 0.5 - i * 0.09,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      }),
     );
-    disk.scale.y = 0.45;
-    disk.position.y = -(diameterM * (0.9 + i * 0.7)) / S;
+    disk.scale.y = 0.4;
+    disk.position.y = -d * (0.8 + i * 0.62);
     group.add(disk);
+    disks.push(disk);
   }
+
+  // 6) 노즐 발광 (항상 카메라를 보는 스프라이트)
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture, color: 0xffffff, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.9,
+  }));
+  glow.scale.set(d * 4.5, d * 4.5, 1);
+  glow.position.y = -d * 0.6;
+  group.add(glow);
+
+  // 7) 실제로 주변을 밝히는 빛 — 발사대와 로켓 아랫부분이 화염빛을 받는다
+  const light = new THREE.PointLight(0xffa33c, 0, d * 140, 2);
+  light.position.y = -d * 1.2;
+  group.add(light);
+
+  group.userData.parts = { haze, outer, mid, core, disks, glow, light, d };
   group.visible = false;
   return group;
+}
+
+/**
+ * 화염 한 벌의 모양을 지금 상태에 맞춘다.
+ * - 흔들림: 길이와 굵기를 빠르게 떨어 실제 불꽃처럼 보이게 한다.
+ * - 고도에 따른 팽창: 공기가 옅어질수록 배기가 옆으로 크게 퍼진다(과팽창 → 저팽창).
+ *   실제 로켓 영상에서 고도가 오를수록 불꽃이 종처럼 벌어지는 이유다.
+ * @param {THREE.Group} flame
+ * @param {number} phase     흔들림 위상
+ * @param {number} altitude  고도 (m)
+ * @param {number} throttle  0~1
+ */
+function shapeFlame(flame, phase, altitude, throttle) {
+  const p = flame.userData.parts;
+  if (!p) return;
+  // 고도 0 km에서 1배, 60 km 위에서 약 2.4배까지 벌어진다
+  const spread = 1 + 1.4 * Math.min(Math.max(altitude, 0) / 60_000, 1);
+  const wobble = 0.9 + 0.1 * Math.sin(phase * 2.7) + 0.05 * Math.sin(phase * 6.3);
+  const power = 0.35 + 0.65 * Math.min(Math.max(throttle, 0), 1);
+
+  flame.scale.set(1, 1, 1);
+  p.haze.scale.set(spread * 1.15, wobble * power * 1.1, spread * 1.15);
+  p.outer.scale.set(spread, wobble * power, spread);
+  p.mid.scale.set(1 + (spread - 1) * 0.6, (0.95 + 0.12 * Math.sin(phase * 4.1)) * power, 1 + (spread - 1) * 0.6);
+  p.core.scale.set(1, 0.9 + 0.16 * Math.sin(phase * 7.9), 1);
+  // 마하 디스크는 공기가 있을 때(저고도)에만 뚜렷하다
+  const diskShow = 1 - Math.min(Math.max(altitude, 0) / 30_000, 1);
+  for (const disk of p.disks) disk.visible = diskShow > 0.15;
+  p.glow.scale.setScalar(p.d * (4.2 + 1.4 * Math.sin(phase * 3.3)) * power);
+  p.light.intensity = 45 * power * (0.85 + 0.15 * Math.sin(phase * 5.1));
 }
 
 /**
@@ -162,13 +256,17 @@ export function createRocketModel(spec) {
   let flicker = 0;
   function update(sim) {
     flicker += 0.35;
+    const altitude = sim.getAltitude();
     for (const s of sim.stages) {
       const flame = flames.get(s.id);
       if (!flame) continue;
       if (s.attached) flame.visible = s.burning;   // 분리된 단의 화염은 launchController가 착륙 연소에 맞춰 켠다
       if (flame.visible) {
-        const k = 0.9 + 0.15 * Math.sin(flicker + s.id.length);
-        flame.scale.set(1, k, 1);
+        const throttle = s.attached ? (s.throttleWhileBoosters ?? 1) : 0.5;
+        shapeFlame(flame, flicker + s.id.length, altitude, throttle);
+      } else {
+        const p = flame.userData.parts;
+        if (p) p.light.intensity = 0;
       }
     }
   }

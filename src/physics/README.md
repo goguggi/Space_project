@@ -58,7 +58,7 @@
 
 | 파일 | 내용 |
 |---|---|
-| `ascentMission.js` | 상승 이정표 7개(이륙·피치 기동·Max-Q·부스터 분리·코어 분리·페어링 분리·궤도 진입). 각 이정표는 `reached(sim)`으로 도달을 판정한다. `reachedSteps`, `nextStep`, `ascentProgress` (D-73) |
+| `ascentMission.js` | 상승 이정표 7개(이륙·피치 기동·Max-Q·부스터 분리·코어 분리·페어링 분리·궤도 진입). 각 이정표는 `reached(sim)`으로 도달을 판정한다. `reachedSteps`, `nextStep`. `ascentProgress`는 이정표마다 정해 둔 예상 시각(`nominalSeconds`) 사이를 비례 배분해 **연속으로** 오른다 (D-73, D-90) |
 
 ## 20단계에서 추가된 것
 

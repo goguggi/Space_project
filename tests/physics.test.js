@@ -252,6 +252,19 @@ cases.push(['상승: 고도 20 km에서 피치·Max-Q 통과 (1 = 그렇다)', 1
 cases.push(['상승: 진행률은 0~1 사이 (1 = 그렇다)', 1,
   ascentProgress(climbing) > 0 && ascentProgress(climbing) < 1 ? 1 : 0, 1e-9]);
 
+// 21단계: 진행 막대가 이정표 사이에서도 계속 차오르는지 (한 칸씩 튀지 않는지)
+const creep = createLaunchSimulation(FALCON_HEAVY);
+const creepValues = [];
+for (let i = 0; i < 120; i += 1) { creep.step(1); creepValues.push(ascentProgress(creep)); }
+cases.push(['상승 진행률: 발사 전 = 0 (1 = 그렇다)', 1,
+  ascentProgress(createLaunchSimulation(FALCON_HEAVY)) === 0 ? 1 : 0, 1e-9]);
+cases.push(['상승 진행률: 줄어드는 구간 없음 (1 = 그렇다)', 1,
+  creepValues.every((v, i) => i === 0 || v >= creepValues[i - 1] - 1e-9) ? 1 : 0, 1e-9]);
+cases.push(['상승 진행률: 1초마다 값이 바뀐 횟수가 이정표 수보다 많다 (1 = 그렇다)', 1,
+  new Set(creepValues.map((v) => v.toFixed(4))).size > ASCENT_STEPS.length ? 1 : 0, 1e-9]);
+cases.push(['상승 진행률: 한 번에 1/7보다 크게 뛰지 않는다 (1 = 그렇다)', 1,
+  creepValues.every((v, i) => i === 0 || v - creepValues[i - 1] < 1 / ASCENT_STEPS.length) ? 1 : 0, 1e-9]);
+
 // ---- 20단계: 착륙 성공·실패 (D-75, D-76) ----
 cases.push(['접지 한계 = 6 m/s', 6, TOUCHDOWN_LIMIT, 1e-9]);
 cases.push(['착륙 성공: 1.5 m/s + 다리 폄 (1 = 성공)', 1, judgeTouchdown(1.5, true).crashed ? 0 : 1, 1e-9]);

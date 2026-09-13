@@ -8,6 +8,7 @@
 import * as THREE from '../../lib/three/three.module.js';
 import { createLaunchScene, SCENE_METERS_PER_UNIT } from './launchScene.js';
 import { createRocketModel } from './rocketModel.js';
+import { createPadPlume } from './padPlume.js';
 import { createFollowCamera } from './followCamera.js';
 import { createLaunchTimeline } from './launchTimeline.js';
 import { createLaunchHud } from './launchHud.js';
@@ -29,6 +30,10 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
   const scene = createLaunchScene(sceneContainer);
   const rocket = createRocketModel(spec);
   scene.scene.add(rocket.root);
+
+  // 발사대 연기 (21단계): 이륙 순간 발사대에서 옆으로 쏟아지는 구름
+  const padPlume = createPadPlume();
+  scene.scene.add(padPlume.group);
 
   const follow = createFollowCamera(scene.camera, scene.controls);
   follow.setTarget(rocket.root, new THREE.Vector3(18, rocket.heightUnits * 0.6, 24));
@@ -243,6 +248,11 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     const events = timeline.update(dt);
     handleEvents(events);
     placeRocket();
+    // 발사대 연기: 시뮬레이션 시각이 아니라 화면 시간(dt)으로 흐른다. 배속을 걸면 그만큼 빨리 퍼진다
+    padPlume.update(dt * Math.max(timeline.getTimeScale?.() ?? 1, 1), {
+      altitude: timeline.sim.getAltitude(),
+      burning: timeline.sim.stages.some((st) => st.attached && st.burning),
+    });
     if (viewMode === 'first') { updateFirstPerson(); } else { updateUprightCamera(); follow.update(); }
     refreshViews();
     if (events.some((e) => e.type === 'complete')) handlers.onComplete?.(events);
@@ -270,6 +280,7 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       detachedGroups.clear();
       if (droneShip) { scene.scene.remove(droneShip); droneShip = null; }
       rocket.reassemble();
+      padPlume.reset();
       pip.clear();
       placeRocket();
       setCameraMode(viewMode);

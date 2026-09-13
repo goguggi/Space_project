@@ -143,6 +143,14 @@ const audio = createSpaceAudio();
 const viewControls = createViewControls(el('view-controls'), {
   onView: (id) => setView(id),
   onSound: (on) => audio.setEnabled(on),
+  // 21단계(D-89): 가지고 있는 음원을 배경 음악으로 쓴다 (브라우저 안에서만 재생)
+  onMusicFile: async (file) => {
+    if (!file) { audio.clearCustomTrack(); viewControls.setMusicName(''); return; }
+    await audio.resume();
+    const ok = await audio.useCustomTrack(file);
+    viewControls.setMusicName(ok ? file.name : '');
+    if (ok) { viewControls.setSound(true); setSubtitle(`배경 음악을 "${file.name}"으로 바꿨습니다.`); }
+  },
 });
 
 function setView(id) {
@@ -334,6 +342,8 @@ function setProgress(p) {
   const b = toBeta(state.speed ?? 0);
 
   stopwatch.setTimes(j.earthElapsed, j.shipElapsed);
+  // 음악도 시간 지연을 따라 늘어진다 (21단계): γ가 클수록 초침과 음형이 느려진다
+  audio.setTimeDilation(gamma(state.speed ?? 0));
   lifespanChart.setProgress(state.progress);
   updateSurvival();
 
@@ -358,6 +368,7 @@ function startLaunch() {
   state.launch.timeline.setTimeScale(5);
   state.launch.launch();
   setMood('launch');
+  audio.setTimeDilation(1);   // 발사 중에는 시간 지연이 없다 (음악도 제 빠르기)
   audio.boom();
   audio.setEngine(1);
   ascentList?.setVisible(true);
@@ -611,6 +622,7 @@ function startLiftoff() {
   state.landing.start();
   state.landing.setCameraMode(state.view);
   setMood('launch');
+  audio.setTimeDilation(1);   // 발사 중에는 시간 지연이 없다 (음악도 제 빠르기)
   audio.boom();
   audio.setEngine(1);
   setSubtitle(`${state.landingBody?.name ?? '목적지'}에서 이륙 — 우주선에 탑승해 지구로 돌아갑니다.`);

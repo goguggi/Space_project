@@ -14,6 +14,7 @@
 #   python tools/build_single.py
 # 코드나 CSS를 고치면 다시 실행해서 `열기.html`을 새로 만든다.
 
+import base64
 import json
 import os
 import re
@@ -74,6 +75,22 @@ def collect(entry):
     return modules
 
 
+def earth_photo_script():
+    """assets/earth/blue_marble.jpg가 있으면 data URL로 박아 넣는다 (21단계, D-88).
+
+    없으면 빈 문자열. 그러면 지구는 캔버스로 그린 그림으로 나온다.
+    사진은 NASA 퍼블릭 도메인이며 넣는 방법은 assets/earth/README.md 참고.
+    """
+    path = os.path.join(ROOT, 'assets', 'earth', 'blue_marble.jpg')
+    if not os.path.exists(path):
+        return ''
+    with open(path, 'rb') as f:
+        data = base64.b64encode(f.read()).decode('ascii')
+    print(f'  지구 사진 포함: assets/earth/blue_marble.jpg ({len(data) / 1024 / 1024:.2f} MB, base64)')
+    return ('\n  <script>window.__EARTH_PHOTO_DATA_URL = "data:image/jpeg;base64,'
+            + data + '";</script>\n')
+
+
 def build_one(html_path, entry, output):
     modules = collect(entry)
     html = read(html_path)
@@ -132,7 +149,9 @@ def build_one(html_path, entry, output):
               .replace('__DEPS__', json.dumps(deps, ensure_ascii=False))
               .replace('__ENTRY__', json.dumps(entry)))
 
-    html = html.replace('</body>', loader + '</body>', 1)
+    # 지구 사진은 계산기 본체에만 넣는다 (검증 페이지에는 3D가 없다)
+    photo = earth_photo_script() if entry == 'src/main.js' else ''
+    html = html.replace('</body>', photo + loader + '</body>', 1)
 
     out = os.path.join(ROOT, output)
     with open(out, 'w', encoding='utf-8') as f:

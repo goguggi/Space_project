@@ -45,3 +45,4 @@
 | 파일 | 설명 대상 |
 |---|---|
 | [../lib/README.md](../lib/README.md) | 동봉한 외부 라이브러리 목록과 버전 |
+| [../assets/earth/README.md](../assets/earth/README.md) | (선택) NASA 지구 사진을 넣는 방법과 출처 (21단계, D-88) |

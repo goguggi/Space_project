@@ -11,7 +11,8 @@
 import * as THREE from '../../lib/three/three.module.js';
 import { OrbitControls } from '../../lib/three/OrbitControls.js';
 import { EARTH_RADIUS } from '../data/constants.js';
-import { createEarthTexture, rotationForSite } from './earthTexture.js';
+import { createEarthTexture, createCloudTexture, rotationForSite } from './earthTexture.js';
+import { loadEarthPhoto } from './earthPhoto.js';
 
 // 표시 축척 상수. 로켓 높이(약 70 m)가 화면에서 약 7 단위가 되도록 1 단위 = 10 m
 export const SCENE_METERS_PER_UNIT = 10;
@@ -47,7 +48,8 @@ export function createLaunchScene(container) {
   // 지구 중심을 (0, -EARTH_DISPLAY_RADIUS, 0)에 두어 발사대 바닥(지표면)이 y = 0 이 되게 한다
   const surfaceY = 0;
   const earthGeometry = new THREE.SphereGeometry(EARTH_DISPLAY_RADIUS, 256, 256);
-  // 18단계(D-69): 캔버스로 그린 지구 표면을 입힌다. 외부 이미지는 쓰지 않는다
+  // 18단계(D-69): 캔버스로 그린 지구 표면을 입힌다. 사진이 없어도 항상 이 그림으로 열린다.
+  // 21단계(D-88): NASA 사진을 찾으면 아래에서 이 map을 사진으로 바꿔 끼운다.
   const earthMaterial = new THREE.MeshStandardMaterial({
     map: createEarthTexture(), roughness: 0.95, metalness: 0,
   });
@@ -56,6 +58,27 @@ export function createLaunchScene(container) {
   earth.position.set(0, -EARTH_DISPLAY_RADIUS, 0);
   earth.receiveShadow = true;
   scene.add(earth);
+
+  // 21단계(D-88): NASA 블루마블 사진이 있으면 그림 대신 사진을 입힌다.
+  // 비동기라 화면은 먼저 뜨고, 사진이 준비되는 순간 조용히 바뀐다. 없으면 그림 그대로.
+  loadEarthPhoto().then((photo) => {
+    if (!photo) return;
+    earthMaterial.map = photo;
+    earthMaterial.needsUpdate = true;
+  });
+
+  // ---- 구름층 (21단계) ----
+  // 지표보다 약 7.6 km 높은 반투명 구(실제 구름 높이와 비슷하다). 지표와 따로 아주 느리게 돈다.
+  // 발사 직후에는 카메라가 이 껍질 안쪽에 있어 보이지 않다가, 구름 높이를 지나면서 아래로 펼쳐진다.
+  const clouds = new THREE.Mesh(
+    new THREE.SphereGeometry(EARTH_DISPLAY_RADIUS * 1.0012, 128, 128),
+    new THREE.MeshStandardMaterial({
+      map: createCloudTexture(), transparent: true, opacity: 0.55,
+      roughness: 1, metalness: 0, depthWrite: false,
+    }),
+  );
+  clouds.position.copy(earth.position);
+  scene.add(clouds);
 
   // 바다/대기 느낌의 옅은 원반(지평선 강조)
   const atmosphere = new THREE.Mesh(
@@ -171,6 +194,7 @@ export function createLaunchScene(container) {
     const dt = lastTime ? Math.min((now - lastTime) / 1000, 1.0) : 0;
     lastTime = now;
     for (const fn of frameCallbacks) fn(dt);
+    clouds.rotation.y += dt * 4e-5;      // 구름은 지표와 따로 아주 천천히 흐른다
     controls.update();
     if (!document.hidden) {
       renderer.render(scene, camera);

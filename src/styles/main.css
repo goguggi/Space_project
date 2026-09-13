@@ -791,7 +791,8 @@ a { color: var(--color-accent); }
   font-weight: 700;
 }
 
-.sound-button {
+.sound-button,
+.music-button {
   padding: 6px 12px;
   background: rgba(4, 7, 16, 0.62);
   border: 1px solid var(--color-border-soft);

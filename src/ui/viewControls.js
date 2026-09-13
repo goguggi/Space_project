@@ -10,8 +10,11 @@ export const VIEW_MODES = [
 
 /**
  * @param {HTMLElement} container
- * @param {{ onView: (id: string) => void, onSound: (on: boolean) => void }} handlers
- * @returns {{ setView: (id: string) => void, setSound: (on: boolean) => void }}
+ * @param {{
+ *   onView: (id: string) => void, onSound: (on: boolean) => void,
+ *   onMusicFile?: (file: File | null) => void,
+ * }} handlers
+ * @returns {{ setView: (id: string) => void, setSound: (on: boolean) => void, setMusicName: (name: string) => void }}
  */
 export function createViewControls(container, handlers) {
   const box = document.createElement('div');
@@ -44,6 +47,31 @@ export function createViewControls(container, handlers) {
     setSound(soundOn);
   });
   box.appendChild(sound);
+
+  // ---- 내 음악 넣기 (21단계, D-89) ----
+  // 배경 음악은 저작권 때문에 저장소에 기성곡을 넣지 않고 코드로 연주한다.
+  // 대신 발표 때 쓰고 싶은 음원이 있으면 여기서 골라 틀 수 있다. 파일은 브라우저 안에서만 재생된다.
+  const musicInput = document.createElement('input');
+  musicInput.type = 'file';
+  musicInput.accept = 'audio/*';
+  musicInput.hidden = true;
+  const music = document.createElement('button');
+  music.type = 'button';
+  music.className = 'view-button music-button';
+  music.textContent = '🎵 내 음악';
+  music.title = '가지고 있는 음원 파일을 배경 음악으로 틉니다 (한 번 더 누르면 기본 곡으로 돌아갑니다)';
+  let musicOn = false;
+  music.addEventListener('click', () => {
+    if (musicOn) { handlers.onMusicFile?.(null); setMusicName(''); return; }
+    musicInput.click();
+  });
+  musicInput.addEventListener('change', () => {
+    const file = musicInput.files?.[0];
+    if (file) handlers.onMusicFile?.(file);
+  });
+  box.appendChild(music);
+  box.appendChild(musicInput);
+
   container.appendChild(box);
 
   function setView(id) {
@@ -56,6 +84,14 @@ export function createViewControls(container, handlers) {
     sound.classList.toggle('active', on);
   }
 
+  /** 고른 음원 이름을 단추에 보여 준다. 빈 문자열이면 기본 곡으로 돌아간 것 */
+  function setMusicName(name) {
+    musicOn = Boolean(name);
+    music.textContent = musicOn ? `🎵 ${name.length > 14 ? `${name.slice(0, 13)}…` : name}` : '🎵 내 음악';
+    music.classList.toggle('active', musicOn);
+    if (!musicOn) musicInput.value = '';
+  }
+
   // 숫자키 단축키. 입력칸에 글자를 치는 중에는 무시한다
   window.addEventListener('keydown', (e) => {
     const tag = document.activeElement?.tagName;
@@ -65,5 +101,5 @@ export function createViewControls(container, handlers) {
   });
 
   setView('third');
-  return { setView, setSound };
+  return { setView, setSound, setMusicName };
 }
