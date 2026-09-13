@@ -17,7 +17,8 @@ import * as THREE from '../../lib/three/three.module.js';
 import { OrbitControls } from '../../lib/three/OrbitControls.js';
 import { angularRadius, dopplerFactor, aberratedAngle } from '../physics/journey.js';
 import { displayRadius } from '../data/celestialBodies.js';
-import { createCockpit } from './cockpit.js';
+import { createInterior } from './interior.js';
+import { createSpacecraft } from './spacecraftModel.js';
 
 // 카메라에서 천체까지의 화면상 거리 (화면 단위). 이 거리에 겉보기 크기를 맞춘다
 const VIEW_DISTANCE = 1_000;
@@ -162,41 +163,6 @@ function createBodyModel(visual) {
   return group;
 }
 
-/** 작은 우주선. 화면 아래쪽 앞에 두어 진행 방향을 알려 준다 */
-function createShipModel() {
-  const ship = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5, 0.5, 4, 20),
-    new THREE.MeshStandardMaterial({ color: 0xe8ecf7, roughness: 0.4, metalness: 0.35 }),
-  );
-  body.rotation.x = Math.PI / 2;
-  ship.add(body);
-  const nose = new THREE.Mesh(
-    new THREE.ConeGeometry(0.5, 1.4, 20),
-    new THREE.MeshStandardMaterial({ color: 0xe8ecf7, roughness: 0.4, metalness: 0.35 }),
-  );
-  nose.rotation.x = Math.PI / 2;
-  nose.position.z = 2.7;
-  ship.add(nose);
-  for (const side of [-1, 1]) {
-    const fin = new THREE.Mesh(
-      new THREE.BoxGeometry(2.2, 0.12, 1.1),
-      new THREE.MeshStandardMaterial({ color: 0x2a3557, roughness: 0.7 }),
-    );
-    fin.position.set(side * 1.1, 0, -1.2);
-    ship.add(fin);
-  }
-  const flame = new THREE.Mesh(
-    new THREE.ConeGeometry(0.42, 2.4, 16),
-    new THREE.MeshBasicMaterial({ color: 0x8fd0ff, transparent: true, opacity: 0.8 }),
-  );
-  flame.rotation.x = -Math.PI / 2;
-  flame.position.z = -3.2;
-  ship.add(flame);
-  ship.userData.flame = flame;
-  return ship;
-}
-
 /**
  * 항행 장면을 만든다. 목적지가 바뀌면 `setDestination`으로 천체만 갈아 끼운다.
  * @param {HTMLElement} container  캔버스를 넣을 요소
@@ -324,10 +290,12 @@ export function createCruiseScene(container) {
   updateStars(0);
 
   // ---- 우주선 ----
-  const ship = createShipModel();
+  // 20단계 (D-78): 심우주 탐사선 형상으로 교체
+  const ship = createSpacecraft();
   // 화면 가운데는 목적지에 내주고, 우주선은 오른쪽 아래에서 진행 방향을 가리킨다
-  ship.position.set(3.4, -3.2, 10);
-  ship.scale.setScalar(0.55);
+  ship.position.set(6.5, -5.2, 14);
+  ship.scale.setScalar(0.5);
+  ship.rotation.y = -0.55;   // 살짝 비스듬히 두어 옆모습이 보이게 한다
   scene.add(ship);
 
   // ---- 지구(뒤)와 목적지(앞) ----
@@ -411,11 +379,13 @@ export function createCruiseScene(container) {
   routeLine.visible = false;
   scene.add(routeLine);
 
-  // ---- 조종석과 자세 조종 (18단계, D-68 · D-70) ----
-  const cockpit = createCockpit(camera);
-  scene.add(camera);   // 조종석이 카메라의 자식이므로 카메라를 장면에 넣어야 그려진다
+  // ---- 선내와 자세 조종 (20단계, D-79 / 18단계 D-68) ----
+  // 선내는 장면에 고정한다. 그래야 고개를 돌릴 때 방이 함께 돌지 않는다.
+  const interior = createInterior(scene);
+  interior.attachReticle(camera);
+  scene.add(camera);   // 조준선이 카메라의 자식이므로 카메라를 장면에 넣어야 그려진다
 
-  const YAW_LIMIT = (120 * Math.PI) / 180;
+  const YAW_LIMIT = (160 * Math.PI) / 180;   // 선내를 둘러볼 수 있도록 넓혔다 (D-79)
   const PITCH_LIMIT = (70 * Math.PI) / 180;
   const AIM_CONE = (7 * Math.PI) / 180;   // 조준선 안으로 볼 각도
   const attitude = { yaw: 0, pitch: 0 };
@@ -469,12 +439,12 @@ export function createCruiseScene(container) {
 
   function setCameraMode(id) {
     viewMode = id === 'first' || id === 'wide' ? id : 'third';
-    cockpit.setVisible(viewMode === 'first');
+    interior.setVisible(viewMode === 'first');
     controls.enabled = viewMode !== 'first';
     if (viewMode === 'first') {
       // 조종석 안: 카메라가 곧 조종사의 눈. OrbitControls 대신 자세값으로 방향을 정한다 (D-70)
       camera.fov = 76;
-      camera.position.set(0, 0, 0);
+      camera.position.copy(interior.seatPosition);   // 왼쪽 좌석에 앉는다
       ship.visible = false;
       routeLine.visible = false;
       applyAttitude();
@@ -507,7 +477,7 @@ export function createCruiseScene(container) {
   function applyLayout() {
     if (viewMode === 'wide') {
       // 지도처럼 본다: 지구와 목적지를 양 끝에 같은 크기로 두고, 우주선을 진행률 위치에 놓는다
-      ship.scale.setScalar(70);
+      ship.scale.setScalar(46);
       ship.position.set(0, 0, -VIEW_DISTANCE + 2 * VIEW_DISTANCE * lastFraction);
       for (const [model, z] of [[earthModel, -VIEW_DISTANCE], [targetModel, VIEW_DISTANCE]]) {
         if (!model) continue;
@@ -516,8 +486,8 @@ export function createCruiseScene(container) {
         model.position.z = z;
       }
     } else {
-      ship.scale.setScalar(0.55);
-      ship.position.set(3.4, -3.2, 10);
+      ship.scale.setScalar(0.5);
+      ship.position.set(6.5, -5.2, 14);
     }
   }
 
@@ -561,7 +531,7 @@ export function createCruiseScene(container) {
     spin += 0.0016;
     if (targetModel) targetModel.rotation.y = spin;
     if (earthModel) earthModel.rotation.y = -spin * 0.7;
-    if (viewMode !== 'wide') ship.position.y = -3.2 + Math.sin(spin * 12) * 0.06;
+    if (viewMode !== 'wide') ship.position.y = -5.2 + Math.sin(spin * 1.4) * 0.12;
     for (const fn of frameCallbacks) fn();
     if (controls.enabled) controls.update();
     renderer.render(scene, camera);
@@ -587,14 +557,16 @@ export function createCruiseScene(container) {
       lastFraction = span > 0 ? Math.min(Math.max(journey.fromEarth / span, 0), 1) : 0;
       refreshBodies();
       updateStars(betaValue);
-      const flame = ship.userData.flame;
-      if (flame) flame.material.opacity = 0.35 + Math.min(betaValue * 3, 0.55);
+      for (const flame of ship.userData.flames ?? []) {
+        flame.material.opacity = 0.3 + Math.min(betaValue * 3, 0.55);
+        flame.scale.y = 0.7 + Math.min(betaValue * 4, 1.1);
+      }
     },
     onFrame(fn) { frameCallbacks.push(fn); },
     setCameraMode,
     get cameraMode() { return viewMode; },
     /** 조종석 계기판 내용 (18단계) */
-    setCockpitReadout(info) { cockpit.setReadout({ ...info, onTarget }); },
+    setCockpitReadout(info) { interior.setReadout({ ...info, onTarget }); },
     /** 목적지가 조준선 안에 있는가 (D-68 보너스 판정) */
     get onTarget() { return onTarget; },
     resetAttitude() { attitude.yaw = 0; attitude.pitch = 0; applyAttitude(); },

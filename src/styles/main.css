@@ -1065,3 +1065,38 @@ a { color: var(--color-accent); }
 @media (max-width: 900px) {
   .ascent-checklist { width: min(250px, 55%); }
 }
+
+/* 착륙 실패와 지표 탐사 (20단계) */
+.checklist-result.grade-crash .grade-badge { background: #ff5a5a; font-size: 1.4rem; }
+.checklist-result.grade-crash { animation: crash-flash 0.5s ease-out; }
+
+@keyframes crash-flash {
+  0% { background: rgba(255, 90, 90, 0.4); }
+  100% { background: transparent; }
+}
+
+.checklist-result .checklist-auto { margin-top: 6px; }
+
+.eva-panel {
+  left: 16px;
+  right: auto;
+  bottom: calc(var(--bar-height) + 46px);
+  width: min(320px, 46%);
+}
+
+.eva-status {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-soft);
+  color: var(--color-accent);
+  font-size: 0.78rem;
+}
+
+.eva-result {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 0.8rem;
+}
+
+.eva-result[hidden] { display: none; }

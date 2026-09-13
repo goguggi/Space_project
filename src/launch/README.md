@@ -74,3 +74,11 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 - `launchTimeline.js`: `advance(seconds)` 추가 — 시뮬레이션을 지정한 만큼 즉시 전진시킨다.
 - `cruiseScene.js` · `landingScene.js`: OrbitControls의 왼쪽·오른쪽 버튼 모두 회전으로 설정, 우클릭 메뉴 차단.
 - `launchScene.js`: OrbitControls는 자리만 잡고 입력은 받지 않는다.
+
+## 20단계에서 추가된 것
+
+| 파일 | 내용 |
+|---|---|
+| `spacecraftModel.js` | 심우주 탐사선 형상: 기밀 모듈·도킹 포트·태양전지판 2장·고이득 접시 안테나·방열판·노즐 4기·항법등. 금박(다층 단열재)과 전지판 격자는 캔버스 텍스처 (D-78) |
+| `interior.js` | 선내. 장면에 고정한 방으로 만들어 고개를 돌리면 좌석·콘솔·에어록 해치가 보이고, 앞을 보면 창밖이 보인다. 17·18단계의 `cockpit.js`를 대신한다 (D-79) |
+| `landingScene.js` | 우주인 모델과 걷기(`stepWalk`), 임무 표식과 결과물(`startEva`·`completeTask`), 폭발(`explode`)과 초기화(`resetScene`) 추가 (D-75, D-77) |

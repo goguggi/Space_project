@@ -16,6 +16,8 @@ import { missionChapters, currentChapter } from '../src/physics/missionTimeline.
 import { LANDING_STEPS, activeStep, missedSteps, descentPenalty, landingGrade, aimBonus } from '../src/physics/landingMission.js';
 import { DESTINATIONS } from '../src/data/destinations.js';
 import { ASCENT_STEPS, reachedSteps, nextStep, ascentProgress } from '../src/physics/ascentMission.js';
+import { judgeTouchdown, TOUCHDOWN_LIMIT } from '../src/physics/landingMission.js';
+import { EXPLORATION_TASKS, walkParameters, taskInReach, nearestTask, explorationScore } from '../src/physics/exploration.js';
 import { STANDARD_GRAVITY, EARTH_RADIUS } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
@@ -249,6 +251,36 @@ cases.push(['상승: 고도 20 km에서 피치·Max-Q 통과 (1 = 그렇다)', 1
   climbDone.pitch && climbDone.maxq ? 1 : 0, 1e-9]);
 cases.push(['상승: 진행률은 0~1 사이 (1 = 그렇다)', 1,
   ascentProgress(climbing) > 0 && ascentProgress(climbing) < 1 ? 1 : 0, 1e-9]);
+
+// ---- 20단계: 착륙 성공·실패 (D-75, D-76) ----
+cases.push(['접지 한계 = 6 m/s', 6, TOUCHDOWN_LIMIT, 1e-9]);
+cases.push(['착륙 성공: 1.5 m/s + 다리 폄 (1 = 성공)', 1, judgeTouchdown(1.5, true).crashed ? 0 : 1, 1e-9]);
+cases.push(['착륙 실패: 9 m/s (1 = 파손)', 1, judgeTouchdown(9, true).crashed ? 1 : 0, 1e-9]);
+cases.push(['착륙 실패: 다리 미전개 (1 = 파손)', 1, judgeTouchdown(1.2, false).crashed ? 1 : 0, 1e-9]);
+cases.push(['한계 바로 아래 5.9 m/s는 성공 (1 = 성공)', 1, judgeTouchdown(5.9, true).crashed ? 0 : 1, 1e-9]);
+
+// ---- 20단계: 우주인 탐사 (D-77) ----
+const moonWalk = walkParameters(CELESTIAL_BODIES.moon.surfaceGravity);
+const earthWalk = walkParameters(9.81);
+cases.push(['탐사 임무: 5개', 5, EXPLORATION_TASKS.length, 1e-9]);
+cases.push(['점프 높이 = v₀²/(2g), 달 (m)', (2.6 ** 2) / (2 * 1.62), moonWalk.jumpHeight, 1e-9]);
+cases.push(['달에서 지구보다 높이 뛴다 (1 = 그렇다)', 1, moonWalk.jumpHeight > earthWalk.jumpHeight ? 1 : 0, 1e-9]);
+cases.push(['달 점프 높이 / 지구 점프 높이 = 9.81/1.62', 9.81 / 1.62, moonWalk.jumpHeight / earthWalk.jumpHeight, 1e-9]);
+// 깃발 지점(22, −14) 위에 서 있으면 깃발 임무를 할 수 있다
+cases.push(['탐사: 깃발 지점에서 수행 가능 (1 = 그렇다)', 1,
+  taskInReach({ x: 22, z: -14 }, {})?.id === 'flag' ? 1 : 0, 1e-9]);
+cases.push(['탐사: 멀리 있으면 수행 불가 (1 = 그렇다)', 1,
+  taskInReach({ x: 200, z: 200 }, {}) === null ? 1 : 0, 1e-9]);
+// 복귀는 나머지를 모두 끝내야 할 수 있다
+cases.push(['탐사: 다른 임무가 남으면 복귀 불가 (1 = 그렇다)', 1,
+  taskInReach({ x: 0, z: 0 }, {}) === null ? 1 : 0, 1e-9]);
+const almost = { flag: true, 'sample-a': true, 'sample-b': true, photo: true };
+cases.push(['탐사: 모두 마치면 복귀 가능 (1 = 그렇다)', 1,
+  taskInReach({ x: 0, z: 0 }, almost)?.id === 'return' ? 1 : 0, 1e-9]);
+cases.push(['탐사 점수: 4/5 = 80점', 80, explorationScore(almost).score, 1e-9]);
+cases.push(['탐사: 4/5는 아직 미완 (1 = 그렇다)', 1, explorationScore(almost).complete ? 0 : 1, 1e-9]);
+cases.push(['탐사 안내: 가장 가까운 임무를 찾는다 (1 = 그렇다)', 1,
+  nearestTask({ x: 20, z: -12 }, {})?.task.id === 'flag' ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');

@@ -6,7 +6,7 @@ import { SURFACE_STEPS, landingGrade } from '../physics/landingMission.js';
 
 /**
  * @param {HTMLElement} container
- * @param {{ onStep: (id: string) => void, onAuto: () => void }} handlers
+ * @param {{ onStep: (id: string) => void, onAuto: () => void, onRetry?: () => void }} handlers
  * @returns {object}
  */
 export function createLandingChecklist(container, handlers) {
@@ -97,10 +97,26 @@ export function createLandingChecklist(container, handlers) {
     return { ...g, total };
   }
 
+  /** 착륙 실패 (20단계, D-75) */
+  function showCrash(reason) {
+    result.hidden = false;
+    result.className = 'checklist-result grade-crash';
+    result.innerHTML = `
+      <div class="grade-badge">💥</div>
+      <div>
+        <b>착륙 실패</b>
+        <div class="grade-notes">${reason}</div>
+        <button type="button" class="checklist-auto" id="checklist-retry">다시 시도</button>
+      </div>
+    `;
+    result.querySelector('#checklist-retry').addEventListener('click', () => handlers.onRetry?.());
+  }
+
   return {
     setSteps,
     update,
     showResult,
+    showCrash,
     setVisible(on) { box.hidden = !on; if (!on) result.hidden = true; },
     clearResult() { result.hidden = true; },
   };

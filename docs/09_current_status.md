@@ -12,10 +12,10 @@
 |---|---|
 | 저장소 | https://github.com/goguggi/Space_project (main 브랜치) |
 | 게시 사이트 | https://goguggi.github.io/Space_project/ (GitHub Pages, main 루트, 푸시하면 1~2분 뒤 자동 갱신) |
-| 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 17, 18, 19 |
+| 완료 단계 | 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20 |
 | 진행 중 | 없음. 다음은 **16단계 (설계한 로켓 불러오기)** |
 | 남은 단계 | 16 → 8 → 9 (순서는 [04_roadmap.md](04_roadmap.md)) |
-| 검증 | `tests/physics.test.html` 92 / 92 통과 |
+| 검증 | `tests/physics.test.html` 108 / 108 통과 |
 
 ## 2. 완료된 것
 
@@ -38,6 +38,7 @@
 | 17 | 시점 전환(1인칭·3인칭·광역), Web Audio 배경음악·효과음, 발사장 구글지도, 달·화성 착륙씬, 왕복 연출 | `src/ui/viewControls.js`, `launchSiteMap.js`, `src/audio/spaceAudio.js`, `src/launch/landingScene.js`, `landingHud.js` |
 | 18 | 지구 재착륙, 구간 클릭 재생, 발사 단축(5배속+자동 전환), 로런츠 곡선, 조종석 1인칭과 자세 조종, 거리 기준 재생 시간(5~60초), KSP식 착륙 절차와 등급, 캔버스 지구 표면, 현실감 있는 로켓 | `src/physics/missionTimeline.js`, `landingMission.js`, `src/ui/lorentzChart.js`, `missionChapters.js`, `landingChecklist.js`, `src/launch/cockpit.js`, `earthTexture.js`, `src/data/earthOutline.js` |
 | 19 | 상승 이정표 7개와 건너뛰기(숫자키 1~7), 3인칭·광역에서 마우스 우클릭 시점 회전 | `src/physics/ascentMission.js`, `src/ui/ascentChecklist.js`, `launchController.js` |
+| 20 | 우주인 지표 탐사(임무 5개), 착륙 실패 폭발과 다시 시도, 심우주 탐사선 형상, 선내 재현 | `src/physics/exploration.js`, `src/ui/evaPanel.js`, `src/launch/spacecraftModel.js`, `interior.js`, `landingScene.js` |
 | 기능 2 계획 | 로켓 설계 프로그램 인수 문서, JSON 계약 예제 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md), `docs/examples/falcon_heavy.rocket.json` |
 
 ## 3. 다음 할 일: 16단계 설계한 로켓 불러오기 (아직 시작 안 함)
@@ -45,6 +46,12 @@
 [04_roadmap.md](04_roadmap.md) 16단계, 계약은 [08_rocket_design_handoff.md](08_rocket_design_handoff.md)와 `docs/examples/falcon_heavy.rocket.json`.
 - 설계 프로그램이 낸 JSON을 읽어 `state.rocketSpec`으로 쓴다. 발사 물리는 처음부터 그 형식(`stages[]`)이므로 파일만 갈아 끼우면 된다.
 - 미결: 설계 저장소 주소(Q-23), 부품 목록 주체(Q-21).
+
+20단계에서 알게 된 것:
+- **방침 변경**: 착륙 실패(폭발)를 도입했다 (D-75). D-41·D-67의 "항상 성공"은 목적지·지구 착륙에서는 더 이상 적용되지 않는다. 부스터·코어 회수는 그대로 항상 성공.
+- 파손 뒤에도 시계가 계속 돌면 `finishLanding`이 반복 호출되어 "다시 시도" 버튼이 매 프레임 다시 만들어진다. `phase = 'crashed'`로 시계를 멈춘다.
+- 선내는 카메라의 자식이 아니라 **장면에 고정**해야 고개를 돌릴 때 방이 따라 돌지 않는다.
+- 선내 치수는 화각에서 거꾸로 계산한다. 눈에서 격벽까지 1.8, 화각 76°면 화면 반높이가 1.8·tan38° ≈ 1.41. 창과 계기판을 그 안에 넣어야 잘리지 않는다.
 
 19단계에서 알게 된 것:
 - 발사 장면은 카메라를 매 프레임 다시 잡으므로 OrbitControls로는 시점을 돌릴 수 없다. 사용자의 회전각(yaw·pitch)과 거리를 따로 들고 있다가 로켓 기준 자리를 그 값으로 계산한다 (D-74).
@@ -92,7 +99,7 @@
 1. 이 문서와 [04_roadmap.md](04_roadmap.md)의 다음 단계, [06_decisions.md](06_decisions.md)의 결정·미결 질문을 읽는다.
 2. 환경 확인: `git config user.name`이 비어 있으면 커밋 명령에 `-c user.name="genai06" -c user.email="genai06@cdsai.kr"`를 붙인다. PowerShell·Python·Node 중 무엇이 있는지 확인한다.
 3. 로컬 서버를 띄운다. `.claude/launch.json`의 `local-server`(PowerShell 스크립트 `tools/serve.ps1`)를 쓰고, PowerShell이 없으면 `python -m http.server 8000`으로 바꿔 `launch.json`을 고친다.
-4. http://localhost:8000/tests/physics.test.html 에서 "92 / 92 통과"를 확인한다.
+4. http://localhost:8000/tests/physics.test.html 에서 "108 / 108 통과"를 확인한다.
 5. 3절의 다음 단계(16단계)를 구현한다. 완료 조건을 만족하면 커밋·푸시하고 이 문서를 갱신한다.
 6. 푸시 시 GitHub 로그인 창이 뜨면 사용자에게 로그인만 요청한다.
 

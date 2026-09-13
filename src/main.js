@@ -30,6 +30,9 @@ import { createLorentzChart } from './ui/lorentzChart.js';
 import { createMissionChapters } from './ui/missionChapters.js';
 import { createLandingChecklist } from './ui/landingChecklist.js';
 import { createAscentChecklist } from './ui/ascentChecklist.js';
+import { createEvaPanel } from './ui/evaPanel.js';
+import { judgeTouchdown } from './physics/landingMission.js';
+import { EXPLORATION_TASKS, walkParameters, taskInReach, nearestTask, explorationScore } from './physics/exploration.js';
 import { ASCENT_STEPS, reachedSteps, nextStep, ascentProgress } from './physics/ascentMission.js';
 import { missionChapters, currentChapter } from './physics/missionTimeline.js';
 import { activeStep, missedSteps, descentPenalty, aimBonus, stepsFor } from './physics/landingMission.js';
@@ -68,7 +71,13 @@ const state = {
   aimSeconds: 0,       // 목적지를 조준선 안에 둔 시간 (D-68)
   cruiseSeconds: 0,    // 항행에 쓴 시간
   chapters: [],
+  // 20단계
+  crashed: false,      // 착륙 실패 (D-75)
+  evaTasks: {},        // 탐사 임무 id → 수행 여부 (D-77)
 };
+
+// 걷기 입력 (20단계). 키를 누르고 있는 동안 유지된다
+const walkKeys = new Set();
 
 // 착륙 시작 고도 (m). 실제 하강 유도는 훨씬 높은 곳에서 시작하지만, 화면에서는 마지막 구간만 보여준다.
 // 지구는 대기가 있어 재진입부터 보여주므로 celestialBodies의 landingStartAltitudeM를 쓴다 (D-66)
@@ -313,6 +322,7 @@ let cruiseHud = null;
 let landingHud = null;
 let checklist = null;
 let ascentList = null;
+let evaPanel = null;
 let cruiseTicker = null;
 
 /** 발사가 끝나면 항행 화면으로 넘어간다 */
@@ -439,16 +449,34 @@ function doLandingStep(id) {
 /** 착륙이 끝나면: 편도면 도착, 왕복이면 이륙해서 항행을 이어간다 */
 function finishLanding() {
   audio.setEngine(0);
-  audio.thud();
   const visual = state.landingBody ?? targetVisual();
   const penalty = descentPenalty(state.landingSteps);
   const touchdown = 1.5 * penalty.descentScale;
+  const outcome = judgeTouchdown(touchdown, penalty.legsOut);
+
+  // ---- 착륙 실패: 폭발 (20단계, D-75) ----
+  if (outcome.crashed) {
+    state.crashed = true;
+    state.wasReentry = state.phase === 'reentry';
+    state.phase = 'crashed';        // 시계를 멈춘다. "다시 시도"로만 빠져나온다
+    audio.boom();
+    state.landing?.explode(landingGravity());
+    checklist?.showCrash(outcome.reason);
+    setSubtitle(`${visual?.name ?? '목적지'} 착륙 실패 — ${outcome.reason}`);
+    syncBar();
+    return;
+  }
+
+  audio.thud();
   const aim = aimBonus(state.aimSeconds, Math.max(state.cruiseSeconds, 0.001));
   const graded = checklist?.showResult(state.landingSteps, touchdown, aim);
-  if (graded) setSubtitle(`${visual?.name ?? '목적지'} 착륙 완료 — 등급 ${graded.grade} (${graded.total}점)`);
+  if (graded) setSubtitle(`${visual?.name ?? '목적지'} 착륙 성공 — 등급 ${graded.grade} (${graded.total}점). 탐사를 시작합니다.`);
 
   // 지구 재착륙이면 임무 종료
   if (state.phase === 'reentry') { finishCruise(); return; }
+
+  // 목적지 착륙에 성공했으면 우주인이 내려 탐사한다 (D-77)
+  if (state.landing && !visual?.reentry) { startEva(); return; }
 
   if (state.tripType === TRIP_TYPES.ROUND_TRIP) {
     setSubtitle(`${visual?.name ?? '목적지'}에서 이륙 — 지구로 돌아갑니다.`);
@@ -466,6 +494,78 @@ function finishLanding() {
   } else {
     finishCruise();
   }
+}
+
+// ---- 지표 탐사 (20단계, D-77) ----
+function startEva() {
+  state.phase = 'eva';
+  state.evaTasks = {};
+  const g = landingGravity();
+  state.landing.startEva(EXPLORATION_TASKS, g);
+  checklist?.setVisible(false);
+  landingHud?.setVisible(false);
+  evaPanel?.setVisible(true);
+  setMood('arrived');
+  setSubtitle(`${state.landingBody?.name ?? '목적지'} 지표 탐사 — W A S D로 걷고, 파란 원 안에서 E를 누르세요.`);
+  refreshEva();
+  syncBar();
+}
+
+function refreshEva() {
+  if (!evaPanel || !state.landing) return;
+  const w = state.landing.walker;
+  const g = landingGravity();
+  evaPanel.update({
+    done: state.evaTasks,
+    reach: taskInReach(w, state.evaTasks),
+    nearest: nearestTask(w, state.evaTasks),
+    gravity: g,
+    jumpHeight: walkParameters(g).jumpHeight,
+  });
+}
+
+/** E를 눌렀을 때: 발밑 임무를 수행한다 */
+function doEvaTask() {
+  if (state.phase !== 'eva' || !state.landing) return;
+  const task = taskInReach(state.landing.walker, state.evaTasks);
+  if (!task) return;
+  state.evaTasks[task.id] = true;
+  state.landing.completeTask(task);
+  audio.chime();
+  const score = explorationScore(state.evaTasks);
+  if (task.last || score.complete) {
+    evaPanel?.showResult(score, landingGravity(), walkParameters(landingGravity()).jumpHeight);
+    setSubtitle(`탐사 완료 — 임무 ${score.doneCount} / ${score.total}. "여행 마치기"를 누르면 다음으로 넘어갑니다.`);
+  }
+  refreshEva();
+}
+
+/** 탐사를 마치고 다음 단계로 (왕복이면 귀환, 편도면 종료) */
+function finishEva() {
+  evaPanel?.setVisible(false);
+  if (state.tripType === TRIP_TYPES.ROUND_TRIP) {
+    state.landing?.hide();
+    state.landing?.stop();
+    state.landing?.resetScene();
+    state.cruise?.show();
+    state.cruise?.start();
+    cruiseHud?.setVisible(true);
+    state.phase = 'cruise';
+    state.playing = true;
+    setMood('cruise');
+    setSubtitle(`${state.landingBody?.name ?? '목적지'}에서 이륙 — 지구로 돌아갑니다.`);
+    syncBar();
+  } else {
+    finishCruise();
+  }
+}
+
+/** 착륙에 실패했을 때 다시 시도 */
+function retryLanding() {
+  state.crashed = false;
+  state.landing?.resetScene();
+  const visual = state.landingBody ?? targetVisual();
+  beginLanding(visual, state.wasReentry ? 'reentry' : 'landing');
 }
 
 function finishCruise() {
@@ -490,6 +590,10 @@ function resetMission() {
   state.visitedTarget = false;
   state.landingSteps = {};
   state.landingBody = null;
+  state.crashed = false;
+  state.evaTasks = {};
+  evaPanel?.setVisible(false);
+  state.landing?.resetScene();
   state.aimSeconds = 0;
   state.cruiseSeconds = 0;
   checklist?.setVisible(false);
@@ -547,6 +651,19 @@ function startTicker() {
       if (state.view === 'first' && state.cruise?.onTarget) state.aimSeconds += dt;
     }
     if (state.phase === 'launch') { refreshAscent(); syncBar(); }
+
+    // 지표 탐사: 키 입력으로 우주인을 움직인다 (D-77)
+    if (state.phase === 'eva' && state.landing) {
+      const g = landingGravity();
+      state.landing.stepWalk({
+        forward: (walkKeys.has('w') ? 1 : 0) - (walkKeys.has('s') ? 1 : 0),
+        strafe: (walkKeys.has('a') ? 1 : 0) - (walkKeys.has('d') ? 1 : 0),
+        turn: (walkKeys.has('arrowleft') ? 1 : 0) - (walkKeys.has('arrowright') ? 1 : 0),
+        jump: walkKeys.has(' '),
+        run: walkKeys.has('shift'),
+      }, dt, walkParameters(g));
+      refreshEva();
+    }
     // 조종석 계기판 갱신
     if (state.view === 'first' && state.cruise && state.phase === 'cruise' && state.result) {
       const j = currentJourney();
@@ -625,9 +742,11 @@ Promise.all([
     state.landing = createLandingScene(el('landing-scene'));
     landingHud = createLandingHud(el('cruise-hud'));
     ascentList = createAscentChecklist(el('launch-hud'), { onJump: (id) => jumpToAscentStep(id) });
+    evaPanel = createEvaPanel(el('cruise-hud'), { onAct: () => doEvaTask(), onFinish: () => finishEva() });
     checklist = createLandingChecklist(el('cruise-hud'), {
       onStep: (id) => doLandingStep(id),
       onAuto: () => { for (const s2 of stepsFor(state.landingBody)) state.landingSteps[s2.id] = true; updateLanding(state.landingProgress); },
+      onRetry: () => retryLanding(),
     });
     // 18단계 (D-64): 발사 구간은 기본 5배속으로 돌려 지루하지 않게 한다
     state.timeScale = 5;
@@ -652,4 +771,20 @@ window.__state = state;
 window.__mission = {
   setProgress, enterCruise, finishCruise, resetMission, reachTarget, updateLanding,
   finishLanding, setView, playChapter, startReentry, doLandingStep, jumpToAscentStep,
+  startEva, doEvaTask, finishEva, retryLanding,
 };
+
+// ---- 걷기·수행 키 (20단계) ----
+window.addEventListener('keydown', (e) => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  const k = e.key.toLowerCase();
+  if (state.phase !== 'eva') return;
+  if ([' ', 'w', 'a', 's', 'd', 'shift', 'arrowleft', 'arrowright'].includes(k)) {
+    walkKeys.add(k);
+    e.preventDefault();
+  }
+  if (k === 'e') { e.preventDefault(); doEvaTask(); }
+});
+window.addEventListener('keyup', (e) => walkKeys.delete(e.key.toLowerCase()));
+window.addEventListener('blur', () => walkKeys.clear());

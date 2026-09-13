@@ -59,3 +59,10 @@
 | 파일 | 내용 |
 |---|---|
 | `ascentMission.js` | 상승 이정표 7개(이륙·피치 기동·Max-Q·부스터 분리·코어 분리·페어링 분리·궤도 진입). 각 이정표는 `reached(sim)`으로 도달을 판정한다. `reachedSteps`, `nextStep`, `ascentProgress` (D-73) |
+
+## 20단계에서 추가된 것
+
+| 파일 / 함수 | 내용 |
+|---|---|
+| `exploration.js` | 우주인 지표 탐사. 임무 5개(깃발·표본 2·촬영·복귀), `walkParameters(중력)`(걷기 속도와 점프 높이 h = v₀²/2g), `taskInReach`, `nearestTask`, `explorationScore` (D-77) |
+| `landingMission.js`의 `judgeTouchdown(speed, legsOut)` | 접지 속도 6 m/s 초과 또는 다리 미전개면 파손 (D-75, D-76) |

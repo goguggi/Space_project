@@ -111,3 +111,24 @@ export function aimBonus(onTargetSeconds, totalSeconds) {
   const ratio = Math.min(Math.max(onTargetSeconds / totalSeconds, 0), 1);
   return { ratio, bonus: Math.round(ratio * 20) };
 }
+
+// ---- 착륙 성공·실패 판정 (20단계, D-75 · D-76) ----
+// 사용자 요청으로 실패를 도입한다. D-41(항상 성공)은 목적지·지구 착륙에서는 더 이상 적용하지 않는다.
+// 부스터·코어 회수(13단계, physics/landingGuidance.js)는 자동 유도이므로 그대로 항상 성공한다.
+
+/** 착륙 다리가 견디는 접지 속도 한계 (m/s). 실제 착륙선은 3 m/s 안팎으로 설계한다 */
+export const TOUCHDOWN_LIMIT = 6;
+
+/**
+ * 접지 결과.
+ * @param {number} speed     접지 속도 (m/s)
+ * @param {boolean} legsOut  착륙 다리를 폈는가
+ * @returns {{ crashed: boolean, reason: string }}
+ */
+export function judgeTouchdown(speed, legsOut) {
+  if (!legsOut) return { crashed: true, reason: '착륙 다리를 펴지 않아 동체가 지면에 부딪혔습니다' };
+  if (speed > TOUCHDOWN_LIMIT) {
+    return { crashed: true, reason: `접지 속도 ${speed.toFixed(1)} m/s — 한계 ${TOUCHDOWN_LIMIT} m/s를 넘어 다리가 부러졌습니다` };
+  }
+  return { crashed: false, reason: '' };
+}

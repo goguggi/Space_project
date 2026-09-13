@@ -74,3 +74,10 @@
 | 파일 | 내용 |
 |---|---|
 | `ascentChecklist.js` | 상승 이정표 목록. 누르거나 숫자키 1~7을 치면 그 지점까지 건너뛴다 (D-73) |
+
+## 20단계에서 추가된 것
+
+| 파일 | 내용 |
+|---|---|
+| `evaPanel.js` | 지표 탐사 화면. 임무 목록, 가까운 목표까지 거리, 조작 안내(W A S D · Shift · Space · E) (D-77) |
+| `landingChecklist.js` | `showCrash(reason)`와 "다시 시도" 버튼 추가 (D-75) |

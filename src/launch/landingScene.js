@@ -189,6 +189,63 @@ export function createLandingScene(container) {
   );
   scene.add(sky);
 
+  // ---- 우주인 (20단계, D-77) ----
+  function createAstronaut() {
+    const g = new THREE.Group();
+    const suit = new THREE.MeshStandardMaterial({ color: 0xeef1f8, roughness: 0.8, metalness: 0.05 });
+    const trim = new THREE.MeshStandardMaterial({ color: 0xff8f3a, roughness: 0.8 });
+    const visor = new THREE.MeshStandardMaterial({ color: 0x2a2f3f, roughness: 0.15, metalness: 0.9 });
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.5, 6, 14), suit);
+    torso.position.y = 1.05;
+    g.add(torso);
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.3, 18, 14), suit);
+    helmet.position.y = 1.68;
+    g.add(helmet);
+    const face = new THREE.Mesh(new THREE.SphereGeometry(0.245, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), visor);
+    face.position.set(0, 1.7, 0.1);
+    face.rotation.x = Math.PI * 0.5;
+    g.add(face);
+    const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.28), trim);
+    pack.position.set(0, 1.12, -0.34);
+    g.add(pack);
+    const limbs = [];
+    for (const side of [-1, 1]) {
+      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.5, 4, 8), suit);
+      arm.position.set(side * 0.42, 1.02, 0);
+      g.add(arm);
+      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.52, 4, 8), suit);
+      leg.position.set(side * 0.17, 0.42, 0);
+      g.add(leg);
+      limbs.push(arm, leg);
+    }
+    const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.045, 8, 20), trim);
+    stripe.position.y = 1.32;
+    stripe.rotation.x = Math.PI / 2;
+    g.add(stripe);
+    g.userData.limbs = limbs;
+    g.visible = false;
+    return g;
+  }
+
+  const astronaut = createAstronaut();
+  scene.add(astronaut);
+
+  // ---- 임무 표식과 결과물 (깃발 등) ----
+  const taskMarkers = new THREE.Group();
+  scene.add(taskMarkers);
+  const placed = new THREE.Group();
+  scene.add(placed);
+
+  // ---- 폭발 (20단계, D-75) ----
+  const debris = new THREE.Group();
+  scene.add(debris);
+  const fireball = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 20, 16),
+    new THREE.MeshBasicMaterial({ color: 0xffbb55, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
+  );
+  scene.add(fireball);
+  let blastTime = -1;
+
   const lander = createLander();
   scene.add(lander);
   const legs = lander.userData.legs;
@@ -202,6 +259,9 @@ export function createLandingScene(container) {
   const skyColor = new THREE.Color();
   let viewMode = 'third';
   let altitude = 0;
+  let gravityNow = 1.62;
+  let evaMode = false;
+  const walker = { x: 0, z: 14, yaw: 0, vy: 0, y: 0 };
 
   function setBody(visual) {
     bodyName = visual.name;
@@ -220,6 +280,29 @@ export function createLandingScene(container) {
   }
 
   function placeCamera() {
+    if (evaMode) {
+      // 우주인 뒤를 따라가는 시점. 1인칭이면 헬멧 안에서 본다
+      const ax = walker.x;
+      const az = walker.z;
+      const ay = walker.y;
+      if (viewMode === 'first') {
+        camera.fov = 80;
+        camera.position.set(ax, ay + 1.7, az);
+        controls.target.set(ax + Math.sin(walker.yaw) * 10, ay + 1.5, az + Math.cos(walker.yaw) * 10);
+      } else if (viewMode === 'wide') {
+        camera.fov = 55;
+        camera.position.set(ax + 40, ay + 46, az + 40);
+        controls.target.set(ax, ay + 1, az);
+      } else {
+        camera.fov = 58;
+        camera.position.set(ax - Math.sin(walker.yaw) * 9, ay + 4.2, az - Math.cos(walker.yaw) * 9);
+        controls.target.set(ax, ay + 1.4, az);
+      }
+      camera.up.set(0, 1, 0);
+      camera.updateProjectionMatrix();
+      controls.update();
+      return;
+    }
     const h = altitude;
     if (viewMode === 'first') {
       // 조종석에서 앞아래를 내려다본다. 똑바로 아래만 보면 지면만 가득 차 하얗게 보인다
@@ -317,17 +400,170 @@ export function createLandingScene(container) {
   }
   window.addEventListener('resize', resize);
 
-  function loop() {
+  let lastFrame = 0;
+  function loop(now) {
     if (!running) return;
     requestAnimationFrame(loop);
+    const dt = lastFrame ? Math.min((now - lastFrame) / 1000, 0.1) : 0;
+    lastFrame = now;
+
+    // 폭발: 불덩이가 부풀며 사라지고 파편이 흩어진다
+    if (blastTime >= 0) {
+      blastTime += dt;
+      const t = Math.min(blastTime / 1.6, 1);
+      fireball.scale.setScalar(2 + t * 26);
+      fireball.material.opacity = (1 - t) * 0.85;
+      for (const piece of debris.children) {
+        piece.userData.v.y -= gravityNow * dt;
+        piece.position.addScaledVector(piece.userData.v, dt);
+        piece.rotation.x += piece.userData.spin * dt;
+        piece.rotation.z += piece.userData.spin * 0.7 * dt;
+        if (piece.position.y < 0.3) { piece.position.y = 0.3; piece.userData.v.multiplyScalar(0); }
+      }
+    }
+
     controls.update();
     renderer.render(scene, camera);
+  }
+
+  /** 착륙 실패: 착륙선을 숨기고 불덩이와 파편을 뿌린다 (D-75) */
+  function explode(gravity = 1.62) {
+    gravityNow = gravity;
+    lander.visible = false;
+    fireball.position.set(0, 4, 0);
+    blastTime = 0;
+    debris.clear();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x9aa2b4, roughness: 0.8, metalness: 0.4 });
+    const hot = new THREE.MeshBasicMaterial({ color: 0xff8a3a });
+    for (let i = 0; i < 34; i += 1) {
+      const size = 0.4 + Math.random() * 1.5;
+      const piece = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 0), i % 5 === 0 ? hot : mat);
+      piece.position.set(0, 5, 0);
+      const a = Math.random() * Math.PI * 2;
+      const up = 6 + Math.random() * 16;
+      const out = 4 + Math.random() * 22;
+      piece.userData.v = new THREE.Vector3(Math.cos(a) * out, up, Math.sin(a) * out);
+      piece.userData.spin = (Math.random() - 0.5) * 6;
+      debris.add(piece);
+    }
+    placeCamera();
+  }
+
+  /** 폭발·EVA 흔적을 지우고 착륙선을 되돌린다 */
+  function resetScene() {
+    blastTime = -1;
+    fireball.material.opacity = 0;
+    debris.clear();
+    placed.clear();
+    taskMarkers.clear();
+    lander.visible = true;
+    astronaut.visible = false;
+    evaMode = false;
+  }
+
+  /** 탐사 시작: 우주인을 착륙선 옆에 세우고 임무 표식을 놓는다 (D-77) */
+  function startEva(tasks, gravity) {
+    gravityNow = gravity;
+    evaMode = true;
+    astronaut.visible = true;
+    walker.x = 0;
+    walker.z = 12;
+    walker.y = 0;
+    walker.vy = 0;
+    taskMarkers.clear();
+    for (const task of tasks) {
+      const marker = new THREE.Group();
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(task.radius - 0.5, task.radius, 32),
+        new THREE.MeshBasicMaterial({ color: 0x6fa8ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.15;
+      marker.add(ring);
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.25, 0.25, 14, 10, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0x6fa8ff, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }),
+      );
+      beam.position.y = 7;
+      marker.add(beam);
+      marker.position.set(task.at.x, 0, task.at.z);
+      marker.userData.taskId = task.id;
+      taskMarkers.add(marker);
+    }
+    updateAstronaut();
+    placeCamera();
+  }
+
+  /** 임무를 마쳤을 때: 표식을 지우고 결과물(깃발 등)을 남긴다 */
+  function completeTask(task) {
+    for (const m of [...taskMarkers.children]) {
+      if (m.userData.taskId === task.id) taskMarkers.remove(m);
+    }
+    if (task.id === 'flag') {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.4, 8),
+        new THREE.MeshStandardMaterial({ color: 0xdfe6f5, roughness: 0.5, metalness: 0.4 }));
+      pole.position.set(task.at.x, 1.7, task.at.z);
+      placed.add(pole);
+      const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.95),
+        new THREE.MeshStandardMaterial({ color: 0x6fa8ff, roughness: 0.9, side: THREE.DoubleSide }));
+      cloth.position.set(task.at.x + 0.78, 2.85, task.at.z);
+      placed.add(cloth);
+    } else if (task.id.startsWith('sample')) {
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.5),
+        new THREE.MeshStandardMaterial({ color: 0x4fd1a0, roughness: 0.7 }));
+      box.position.set(task.at.x, 0.3, task.at.z);
+      placed.add(box);
+    } else if (task.id === 'photo') {
+      const tripod = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 3),
+        new THREE.MeshStandardMaterial({ color: 0x39415e, roughness: 0.8 }));
+      tripod.position.set(task.at.x, 0.7, task.at.z);
+      placed.add(tripod);
+    }
+  }
+
+  /** 우주인 위치·자세 반영 */
+  function updateAstronaut() {
+    astronaut.position.set(walker.x, walker.y, walker.z);
+    astronaut.rotation.y = walker.yaw;
+  }
+
+  /**
+   * 걷기 한 걸음. main.js가 매 프레임 방향과 시간 간격을 준다.
+   * @param {{ forward: number, strafe: number, turn: number, jump: boolean }} input
+   * @param {number} dt
+   * @param {{ walkSpeed: number, jumpSpeed: number }} params
+   */
+  function stepWalk(input, dt, params) {
+    if (!evaMode) return walker;
+    walker.yaw += input.turn * 1.8 * dt;
+    const speed = params.walkSpeed * (input.run ? 1.9 : 1);
+    const dx = (Math.sin(walker.yaw) * input.forward + Math.cos(walker.yaw) * input.strafe) * speed * dt;
+    const dz = (Math.cos(walker.yaw) * input.forward - Math.sin(walker.yaw) * input.strafe) * speed * dt;
+    walker.x = Math.max(-GROUND_RADIUS * 0.9, Math.min(GROUND_RADIUS * 0.9, walker.x + dx));
+    walker.z = Math.max(-GROUND_RADIUS * 0.9, Math.min(GROUND_RADIUS * 0.9, walker.z + dz));
+    if (input.jump && walker.y <= 0.001) walker.vy = params.jumpSpeed;
+    walker.vy -= gravityNow * dt;
+    walker.y = Math.max(0, walker.y + walker.vy * dt);
+    if (walker.y === 0) walker.vy = 0;
+    // 걸을 때 팔다리를 흔든다
+    const moving = Math.abs(input.forward) + Math.abs(input.strafe) > 0.01;
+    const swing = moving ? Math.sin(performance.now() * 0.006) * 0.5 : 0;
+    astronaut.userData.limbs.forEach((limb, i) => { limb.rotation.x = swing * (i % 2 ? -1 : 1); });
+    updateAstronaut();
+    return walker;
   }
 
   return {
     setBody,
     setDescent,
     setCameraMode,
+    explode,
+    resetScene,
+    startEva,
+    completeTask,
+    stepWalk,
+    get walker() { return walker; },
+    get isEva() { return evaMode; },
     get bodyName() { return bodyName; },
     show() { renderer.domElement.style.display = 'block'; resize(); },
     hide() { renderer.domElement.style.display = 'none'; },
