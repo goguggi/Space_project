@@ -113,6 +113,11 @@ export function createLandingScene(container) {
 
   const camera = new THREE.PerspectiveCamera(52, 16 / 9, 0.5, 40_000);
   const controls = new OrbitControls(camera, renderer.domElement);
+  // 19단계 (D-74): 마우스 오른쪽 버튼으로도 시점을 돌릴 수 있게 한다. 왼쪽도 그대로 회전한다
+  controls.mouseButtons = {
+    LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE,
+  };
+  renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   controls.enableDamping = true;
   controls.enablePan = false;
   controls.minDistance = 8;

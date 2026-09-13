@@ -29,6 +29,8 @@ import { createSpaceAudio } from './audio/spaceAudio.js';
 import { createLorentzChart } from './ui/lorentzChart.js';
 import { createMissionChapters } from './ui/missionChapters.js';
 import { createLandingChecklist } from './ui/landingChecklist.js';
+import { createAscentChecklist } from './ui/ascentChecklist.js';
+import { ASCENT_STEPS, reachedSteps, nextStep, ascentProgress } from './physics/ascentMission.js';
 import { missionChapters, currentChapter } from './physics/missionTimeline.js';
 import { activeStep, missedSteps, descentPenalty, aimBonus, stepsFor } from './physics/landingMission.js';
 import { computeTimeDilation, TRIP_TYPES } from './physics/timeDilation.js';
@@ -129,6 +131,24 @@ function setView(id) {
 
 function setMood(name) { audio.setMood(name); }
 
+/** 상승 이정표를 눌렀을 때: 아직 오지 않은 지점이면 거기까지 즉시 전진한다 (D-73) */
+function jumpToAscentStep(id) {
+  if (!state.launch) return;
+  const step = ASCENT_STEPS.find((s2) => s2.id === id);
+  if (!step) return;
+  if (state.phase === 'ready') startLaunch();
+  if (state.phase !== 'launch') return;
+  audio.thud();
+  state.launch.advanceUntil(step.reached);
+  refreshAscent();
+}
+
+function refreshAscent() {
+  if (!ascentList || !state.launch) return;
+  const sim = state.launch.timeline.sim;
+  ascentList.update({ done: reachedSteps(sim), next: nextStep(sim) });
+}
+
 // ---- 임무 구간 칩 (18단계, D-65) ----
 const chapters = createMissionChapters(el('mission-chapters'), {
   onSelect: (id) => playChapter(id),
@@ -174,9 +194,13 @@ function playChapter(id) {
 }
 
 function syncBar() {
+  // 발사 구간에서는 항행 진행률 대신 상승 이정표 진행률을 보여준다 (19단계)
+  const barProgress = state.phase === 'launch' && state.launch
+    ? ascentProgress(state.launch.timeline.sim)
+    : state.progress;
   missionBar.update({
     phase: state.phase,
-    progress: state.progress,
+    progress: barProgress,
     playing: state.playing,
     timeScale: state.timeScale,
     ready: Boolean(state.launch && state.result),
@@ -280,13 +304,15 @@ function startLaunch() {
   setMood('launch');
   audio.boom();
   audio.setEngine(1);
-  setSubtitle('발사 진행 중 — 부스터 분리와 재착륙을 보조 화면에서 볼 수 있습니다.');
+  ascentList?.setVisible(true);
+  setSubtitle('발사 진행 중 — 왼쪽 상승 절차를 누르면 그 지점까지 건너뜁니다. 오른쪽 버튼 드래그로 시점을 돌리세요.');
   syncBar();
 }
 
 let cruiseHud = null;
 let landingHud = null;
 let checklist = null;
+let ascentList = null;
 let cruiseTicker = null;
 
 /** 발사가 끝나면 항행 화면으로 넘어간다 */
@@ -300,6 +326,7 @@ function enterCruise({ silent = false } = {}) {
   state.landing?.hide();
   state.landing?.stop();
   landingHud?.setVisible(false);
+  ascentList?.setVisible(false);
   cruiseHud?.setVisible(true);
   state.cruise.setCameraMode(state.view);
   setMood('cruise');
@@ -466,6 +493,7 @@ function resetMission() {
   state.aimSeconds = 0;
   state.cruiseSeconds = 0;
   checklist?.setVisible(false);
+  ascentList?.setVisible(false);
   state.cruise?.resetAttitude();
   state.cruise?.hide();
   state.cruise?.stop();
@@ -518,6 +546,7 @@ function startTicker() {
       state.cruiseSeconds += dt;
       if (state.view === 'first' && state.cruise?.onTarget) state.aimSeconds += dt;
     }
+    if (state.phase === 'launch') { refreshAscent(); syncBar(); }
     // 조종석 계기판 갱신
     if (state.view === 'first' && state.cruise && state.phase === 'cruise' && state.result) {
       const j = currentJourney();
@@ -595,6 +624,7 @@ Promise.all([
     cruiseHud = createCruiseHud(el('cruise-hud'));
     state.landing = createLandingScene(el('landing-scene'));
     landingHud = createLandingHud(el('cruise-hud'));
+    ascentList = createAscentChecklist(el('launch-hud'), { onJump: (id) => jumpToAscentStep(id) });
     checklist = createLandingChecklist(el('cruise-hud'), {
       onStep: (id) => doLandingStep(id),
       onAuto: () => { for (const s2 of stepsFor(state.landingBody)) state.landingSteps[s2.id] = true; updateLanding(state.landingProgress); },
@@ -621,5 +651,5 @@ Promise.all([
 window.__state = state;
 window.__mission = {
   setProgress, enterCruise, finishCruise, resetMission, reachTarget, updateLanding,
-  finishLanding, setView, playChapter, startReentry, doLandingStep,
+  finishLanding, setView, playChapter, startReentry, doLandingStep, jumpToAscentStep,
 };

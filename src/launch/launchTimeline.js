@@ -16,6 +16,7 @@ const SKIP_MAX_SECONDS = 3_600;
  *   sim: object, start: () => void, pause: () => void, reset: () => void, skip: () => object[],
  *   setTimeScale: (n: number) => void, getTimeScale: () => number,
  *   update: (dtReal: number) => object[],   실제 경과 시간을 받아 시뮬레이션을 전진시키고 사건을 돌려준다
+ *   advance: (seconds: number) => object[],  시뮬레이션 시간을 지정한 만큼 즉시 전진시킨다
  *   isRunning: () => boolean, getPhase: () => string, getEvents: () => object[],
  * }}
  */
@@ -65,6 +66,13 @@ export function createLaunchTimeline(spec) {
       applyEvents(collected);
       running = false;
       return collected;
+    },
+    /** 지정한 시뮬레이션 시간만큼 한 번에 전진시킨다 (19단계: 이정표까지 건너뛰기) */
+    advance(seconds) {
+      if (sim.isAllSettled()) return [];
+      const events = sim.step(seconds);
+      applyEvents(events);
+      return events;
     },
     setTimeScale(n) { timeScale = n; },
     getTimeScale: () => timeScale,

@@ -36,7 +36,7 @@ export function createMissionBar(container, handlers) {
       <div class="mission-phase" id="mission-phase">발사 대기</div>
       <input type="range" id="mission-scrub" class="mission-scrub" min="0" max="1000" step="1" value="0"
              aria-label="항행 진행률">
-      <div class="mission-ticks"><span>출발</span><span id="mission-percent">0%</span><span>도착</span></div>
+      <div class="mission-ticks"><span id="mission-start">출발</span><span id="mission-percent">0%</span><span id="mission-end">도착</span></div>
     </div>
     <div class="mission-right">
       <span class="mission-label">배속</span>
@@ -73,6 +73,9 @@ export function createMissionBar(container, handlers) {
     update(s) {
       el('mission-phase').textContent = PHASE_LABELS[s.phase] ?? s.phase;
       el('mission-percent').textContent = `${Math.round(s.progress * 100)}%`;
+      const ascent = s.phase === 'launch';
+      el('mission-start').textContent = ascent ? '발사대' : '출발';
+      el('mission-end').textContent = ascent ? '궤도' : '도착';
       // 사용자가 슬라이더를 끄는 중에는 값을 덮어쓰지 않는다
       if (document.activeElement !== scrub) scrub.value = String(Math.round(s.progress * 1000));
       scrub.style.setProperty('--fill', `${s.progress * 100}%`);
@@ -88,7 +91,7 @@ export function createMissionBar(container, handlers) {
       const play = el('mission-play');
       play.hidden = s.phase !== 'cruise' && s.phase !== 'arrived';
       // 착륙 연출 중에는 진행 슬라이더를 잠근다 (임무 시계가 멈춰 있다)
-      scrub.disabled = s.phase === 'landing' || s.phase === 'reentry';
+      scrub.disabled = s.phase === 'landing' || s.phase === 'reentry' || s.phase === 'launch';
       play.textContent = s.playing ? '❚❚' : '▶';
       play.title = s.playing ? '일시정지' : '재생';
 

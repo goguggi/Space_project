@@ -131,11 +131,13 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     scene.controls.enabled = viewMode !== 'first';
     if (viewMode === 'third') {
       scene.camera.fov = 50;
-      baseOffset.set(18, rocket.heightUnits * 0.6, 24);
+      orbit.distance = ORBIT_DEFAULT.third.distance;
+      orbit.pitch = ORBIT_DEFAULT.third.pitch;
       follow.setTarget(rocket.root, baseOffset.clone());
     } else if (viewMode === 'wide') {
       scene.camera.fov = 55;
-      baseOffset.set(95, 48, 165);
+      orbit.distance = ORBIT_DEFAULT.wide.distance;
+      orbit.pitch = ORBIT_DEFAULT.wide.pitch;
       follow.setTarget(rocket.root, baseOffset.clone());
     } else {
       scene.camera.fov = 78;
@@ -144,6 +146,39 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     if (viewMode !== 'first') updateUprightCamera();
     scene.camera.updateProjectionMatrix();
   }
+
+  // ---- 우클릭 시점 회전 (19단계, D-74) ----
+  // 매 프레임 카메라 자리를 다시 잡기 때문에 OrbitControls로는 시점을 돌릴 수 없다.
+  // 그래서 사용자의 회전각(yaw·pitch)과 거리를 따로 들고 있다가, 로켓 기준 자리를 그 값으로 계산한다.
+  // 오른쪽 버튼 드래그로 돌리고, 휠로 멀어졌다 가까워진다. 왼쪽 드래그도 같게 동작한다.
+  const orbit = { yaw: 0.62, pitch: 0.22, distance: 34 };
+  const ORBIT_DEFAULT = { third: { distance: 34, pitch: 0.22 }, wide: { distance: 210, pitch: 0.32 } };
+  let dragging = false;
+  let lastPointer = { x: 0, y: 0 };
+  const canvas = scene.renderer.domElement;
+
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  canvas.addEventListener('pointerdown', (e) => {
+    if (viewMode === 'first') return;
+    if (e.button !== 0 && e.button !== 2) return;
+    dragging = true;
+    lastPointer = { x: e.clientX, y: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    orbit.yaw -= (e.clientX - lastPointer.x) * 0.006;
+    orbit.pitch = Math.max(-1.2, Math.min(1.35, orbit.pitch + (e.clientY - lastPointer.y) * 0.005));
+    lastPointer = { x: e.clientX, y: e.clientY };
+  });
+  const endDrag = () => { dragging = false; };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('wheel', (e) => {
+    if (viewMode === 'first') return;
+    e.preventDefault();
+    orbit.distance = Math.max(12, Math.min(4_000, orbit.distance * (1 + Math.sign(e.deltaY) * 0.12)));
+  }, { passive: false });
 
   // 로켓이 있는 곳의 국소 수직 (지구 중심에서 로켓을 향하는 방향). 화면 좌표계 기준
   const localUp = new THREE.Vector3();
@@ -155,15 +190,43 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
    * 카메라 오프셋을 세계 좌표에 고정해 두면 그만큼 화면이 옆으로 돌아가 보인다.
    * 그래서 오프셋을 로켓의 국소 수직에 맞춰 함께 돌리고, 카메라의 위쪽도 국소 수직으로 둔다.
    */
+  const zAxis = new THREE.Vector3(0, 0, 1);
+
   function updateUprightCamera() {
     const { r } = timeline.sim.vehicle;
     // 화면 좌표에서 지구 중심은 (0, −R/S, 0). 로켓 위치에서 본 국소 수직
     const [x, y] = toScene(r);
     localUp.set(x, y + EARTH_RADIUS / S, 0).normalize();
     const angle = Math.atan2(localUp.x, localUp.y);   // 발사장에서 잰 다운레인지 각
-    camOffset.copy(baseOffset).applyAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+
+    // 사용자가 돌린 각도(yaw·pitch)와 거리로 로켓 기준 자리를 만든다.
+    // 로켓의 위쪽이 +Y가 되는 국소 좌표에서 계산한 뒤, 다운레인지 각만큼 함께 돌린다.
+    const cp = Math.cos(orbit.pitch);
+    camOffset.set(
+      Math.sin(orbit.yaw) * cp * orbit.distance,
+      Math.sin(orbit.pitch) * orbit.distance + rocket.heightUnits * 0.4,
+      Math.cos(orbit.yaw) * cp * orbit.distance,
+    );
+    camOffset.applyAxisAngle(zAxis, angle);
     follow.setOffset(camOffset);
     scene.camera.up.copy(localUp);
+  }
+
+  /**
+   * 조건을 만족할 때까지 시뮬레이션을 즉시 전진시킨다 (19단계: 상승 이정표 건너뛰기).
+   * @param {(sim: object) => boolean} predicate
+   */
+  function advanceUntil(predicate, maxSeconds = 1_500) {
+    if (predicate(timeline.sim)) return;
+    let elapsed = 0;
+    while (elapsed < maxSeconds && !predicate(timeline.sim) && !timeline.sim.isAllSettled()) {
+      const events = timeline.advance(2);
+      handleEvents(events);
+      elapsed += 2;
+      if (events.some((e) => e.type === 'complete')) { handlers.onComplete?.(events); break; }
+    }
+    placeRocket();
+    refreshViews();
   }
 
   /** 1인칭: 로켓 꼭대기에 카메라를 두고 추력 방향을 본다 */
@@ -195,6 +258,7 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
   return {
     launch() { timeline.start(); },
     skip,
+    advanceUntil,
     setCameraMode,
     get cameraMode() { return viewMode; },
     /** 항행 화면으로 넘어갈 때 발사 계기판을 숨긴다 (15단계) */

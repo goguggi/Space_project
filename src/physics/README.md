@@ -53,3 +53,9 @@
 | `missionTimeline.js` | 임무를 6구간(발사·궤도 진입·항행·목적지·귀환·지구 재착륙)으로 나눈다. `missionChapters(옵션)`, `currentChapter(구간들, 상태)` (D-65) |
 | `landingMission.js` | KSP식 착륙 절차. `LANDING_STEPS`, `activeStep`, `missedSteps`, `descentPenalty`, `landingGrade`(A~D), `aimBonus` (D-67, D-68) |
 | `landingGuidance.js`의 `descentProfile` | 천체 표면 착륙의 고도·속도·추력 (17단계에 추가, 18단계에서 지구 재진입에도 쓴다) |
+
+## 19단계에서 추가된 것
+
+| 파일 | 내용 |
+|---|---|
+| `ascentMission.js` | 상승 이정표 7개(이륙·피치 기동·Max-Q·부스터 분리·코어 분리·페어링 분리·궤도 진입). 각 이정표는 `reached(sim)`으로 도달을 판정한다. `reachedSteps`, `nextStep`, `ascentProgress` (D-73) |

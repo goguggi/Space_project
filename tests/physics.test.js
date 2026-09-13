@@ -15,6 +15,7 @@ import { travelDurationSeconds } from '../src/physics/journey.js';
 import { missionChapters, currentChapter } from '../src/physics/missionTimeline.js';
 import { LANDING_STEPS, activeStep, missedSteps, descentPenalty, landingGrade, aimBonus } from '../src/physics/landingMission.js';
 import { DESTINATIONS } from '../src/data/destinations.js';
+import { ASCENT_STEPS, reachedSteps, nextStep, ascentProgress } from '../src/physics/ascentMission.js';
 import { STANDARD_GRAVITY, EARTH_RADIUS } from '../src/data/constants.js';
 
 const c = SPEED_OF_LIGHT;
@@ -221,6 +222,33 @@ cases.push(['등급: 아무것도 안 함 + 11 m/s → D (1 = 그렇다)', 1, gr
 cases.push(['등급: 점수는 0~100 (1 = 그렇다)', 1, gradeD.score >= 0 && gradeD.score <= 100 ? 1 : 0, 1e-9]);
 cases.push(['조준 보너스: 절반 유지 = 10점', 10, aimBonus(5, 10).bonus, 1e-9]);
 cases.push(['조준 보너스: 계속 유지 = 20점', 20, aimBonus(10, 10).bonus, 1e-9]);
+
+// ---- 19단계: 상승 이정표 (D-73) ----
+// fh 는 앞에서 팔콘 헤비 발사를 끝까지 돌린 시뮬레이션이다
+const aDone = reachedSteps(fh);
+cases.push(['상승 이정표: 7개', 7, ASCENT_STEPS.length, 1e-9]);
+cases.push(['상승: 발사 종료 시 모든 이정표 도달 (1 = 그렇다)', 1,
+  ASCENT_STEPS.every((s2) => aDone[s2.id]) ? 1 : 0, 1e-9]);
+cases.push(['상승: 발사 종료 시 진행률 = 1', 1, ascentProgress(fh), 1e-9]);
+cases.push(['상승: 발사 종료 시 다음 이정표 없음 (1 = 그렇다)', 1, nextStep(fh) === null ? 1 : 0, 1e-9]);
+
+// 발사 직후(1초)에는 이륙만 도달한 상태여야 한다
+const fresh = createLaunchSimulation(FALCON_HEAVY);
+fresh.step(1);
+const freshDone = reachedSteps(fresh);
+cases.push(['상승: T+1초에 이륙 도달 (1 = 그렇다)', 1, freshDone.liftoff ? 1 : 0, 1e-9]);
+cases.push(['상승: T+1초에 부스터 분리 아직 (1 = 그렇다)', 1, freshDone.boosters ? 0 : 1, 1e-9]);
+cases.push(['상승: T+1초의 다음 이정표 = 피치 기동 (1 = 그렇다)', 1,
+  nextStep(fresh)?.id === 'pitch' ? 1 : 0, 1e-9]);
+
+// 고도 20 km까지 전진시키면 피치 기동과 Max-Q는 지나야 한다
+const climbing = createLaunchSimulation(FALCON_HEAVY);
+for (let i = 0; i < 200 && climbing.getAltitude() < 20_000; i += 1) climbing.step(1);
+const climbDone = reachedSteps(climbing);
+cases.push(['상승: 고도 20 km에서 피치·Max-Q 통과 (1 = 그렇다)', 1,
+  climbDone.pitch && climbDone.maxq ? 1 : 0, 1e-9]);
+cases.push(['상승: 진행률은 0~1 사이 (1 = 그렇다)', 1,
+  ascentProgress(climbing) > 0 && ascentProgress(climbing) < 1 ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');

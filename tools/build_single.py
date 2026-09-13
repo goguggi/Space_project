@@ -37,6 +37,11 @@ def read(path):
         return f.read()
 
 
+def looks_like_module(spec):
+    """HTML 속성 안의 'from' 같은 글자에 걸리지 않도록, 모듈 경로처럼 생긴 것만 받는다"""
+    return spec in BARE or (spec.startswith('.') and '<' not in spec and '>' not in spec and ' ' not in spec)
+
+
 def resolve(spec, importer):
     if spec in BARE:
         return BARE[spec]
@@ -58,6 +63,8 @@ def collect(entry):
         deps = []
 
         def sub(m):
+            if not looks_like_module(m.group(3)):
+                return m.group(0)
             target = resolve(m.group(3), path)
             deps.append(target)
             return f'{m.group(1)}"__MOD__{target}__END__"'

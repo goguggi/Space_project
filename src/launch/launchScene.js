@@ -132,6 +132,9 @@ export function createLaunchScene(container) {
   controls.enablePan = false;
   controls.minDistance = 5;
   controls.maxDistance = 5_000;
+  // 19단계: 발사 장면의 시점 회전은 launchController가 직접 처리한다(로켓과 함께 기울어야 하므로).
+  // OrbitControls는 자리만 잡아 두고 입력은 받지 않는다.
+  controls.enabled = false;
   controls.update();
 
   // ---- 창 크기 변경 ----

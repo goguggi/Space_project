@@ -218,6 +218,11 @@ export function createCruiseScene(container) {
   camera.lookAt(0, 0, VIEW_DISTANCE);
 
   const controls = new OrbitControls(camera, renderer.domElement);
+  // 19단계 (D-74): 마우스 오른쪽 버튼으로도 시점을 돌릴 수 있게 한다. 왼쪽도 그대로 회전한다
+  controls.mouseButtons = {
+    LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE,
+  };
+  renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   controls.target.set(0, 0, 40);
   controls.enableDamping = true;
   controls.enablePan = false;

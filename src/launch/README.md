@@ -65,3 +65,12 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 | `cruiseScene.js` | 조종석과 자세 조종(WASD·방향키, R로 복귀)을 추가. 목적지가 조준선 안에 있는지 `onTarget`으로 알려준다 (D-68, D-70) |
 | `rocketModel.js` | 인터스테이지·격자 날개·착륙 다리·노즐 9기·마하 디스크 화염으로 실제 팔콘 헤비에 가깝게 (R-9) |
 | `launchScene.js` | 지구에 표면 텍스처를 입히고 발사장 좌표에 맞춰 돌린다. 발사 단지 지면을 깐다 (D-69) |
+
+## 19단계에서 바뀐 것
+
+- `launchController.js`: 마우스 **오른쪽 버튼 드래그**로 시점 회전, 휠로 거리 조절 (D-74).
+  카메라 자리를 매 프레임 다시 잡으므로 OrbitControls 대신 직접 처리한다.
+  `advanceUntil(predicate)`로 상승 이정표까지 즉시 전진한다 (D-73).
+- `launchTimeline.js`: `advance(seconds)` 추가 — 시뮬레이션을 지정한 만큼 즉시 전진시킨다.
+- `cruiseScene.js` · `landingScene.js`: OrbitControls의 왼쪽·오른쪽 버튼 모두 회전으로 설정, 우클릭 메뉴 차단.
+- `launchScene.js`: OrbitControls는 자리만 잡고 입력은 받지 않는다.
