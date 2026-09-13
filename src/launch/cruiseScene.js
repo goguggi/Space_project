@@ -314,8 +314,8 @@ export function createCruiseScene(container) {
   // 20단계 (D-78): 심우주 탐사선 형상으로 교체
   const ship = createSpacecraft();
   // 화면 가운데는 목적지에 내주고, 우주선은 오른쪽 아래에서 진행 방향을 가리킨다
-  ship.position.set(6.5, -5.2, 14);
-  ship.scale.setScalar(0.5);
+  ship.position.set(9.5, -4.6, 30);
+  ship.scale.setScalar(0.62);   // 21단계(D-94): 배가 커진 만큼 조금 멀리 두어 전체가 보이게
   ship.rotation.y = -0.55;   // 살짝 비스듬히 두어 옆모습이 보이게 한다
   scene.add(ship);
 
@@ -507,7 +507,7 @@ export function createCruiseScene(container) {
         model.position.z = z;
       }
     } else {
-      ship.scale.setScalar(0.5);
+      ship.scale.setScalar(0.62);
       ship.position.set(6.5, -5.2, 14);
     }
   }
@@ -552,7 +552,9 @@ export function createCruiseScene(container) {
     spin += 0.0016;
     if (targetModel) targetModel.rotation.y = spin;
     if (earthModel) earthModel.rotation.y = -spin * 0.7;
-    if (viewMode !== 'wide') ship.position.y = -5.2 + Math.sin(spin * 1.4) * 0.12;
+    if (viewMode !== 'wide') ship.position.y = -4.6 + Math.sin(spin * 1.4) * 0.12;
+    // 회전 거주 구역: 원심 중력을 만드는 고리는 늘 돌고 있다 (D-94)
+    if (ship.userData.ring) ship.userData.ring.rotation.z += dt * 0.7;
     for (const fn of frameCallbacks) fn();
     if (controls.enabled) controls.update();
     renderer.render(scene, camera);

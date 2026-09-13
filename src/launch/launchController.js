@@ -249,6 +249,8 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
     handleEvents(events);
     placeRocket();
     // 발사대 연기: 시뮬레이션 시각이 아니라 화면 시간(dt)으로 흐른다. 배속을 걸면 그만큼 빨리 퍼진다
+    // 페어링 분리 (21단계, D-94): 고도 120 km를 넘으면 껍데기를 벗고 우주선이 드러난다 (D-73과 같은 기준)
+    rocket.setFairing(timeline.sim.getAltitude() < 120_000);
     padPlume.update(dt * Math.max(timeline.getTimeScale?.() ?? 1, 1), {
       altitude: timeline.sim.getAltitude(),
       burning: timeline.sim.stages.some((st) => st.attached && st.burning),
@@ -280,6 +282,7 @@ export function createLaunchController(sceneContainer, hudContainer, spec, handl
       detachedGroups.clear();
       if (droneShip) { scene.scene.remove(droneShip); droneShip = null; }
       rocket.reassemble();
+      rocket.setFairing(true);
       padPlume.reset();
       pip.clear();
       placeRocket();

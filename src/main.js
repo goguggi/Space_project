@@ -25,6 +25,8 @@ import { createSurvivalIcons } from './ui/survivalIcons.js';
 import { createMissionBar } from './ui/missionBar.js';
 import { createViewControls } from './ui/viewControls.js';
 import { createArrivalCard } from './ui/arrivalCard.js';
+import { createWaypointSelector } from './ui/waypointSelector.js';
+import { legDistance } from './physics/route.js';
 import { createLaunchSiteMap } from './ui/launchSiteMap.js';
 import { createSpaceAudio } from './audio/spaceAudio.js';
 import { createLorentzChart } from './ui/lorentzChart.js';
@@ -65,6 +67,8 @@ const state = {
   // 17단계
   view: 'third',       // 1인칭 / 3인칭 / 광역
   landingProgress: 0,  // 착륙 연출 진행률 (0~1)
+  waypoint: null,     // 경유지 천체 (21단계, D-95). 없으면 곧장 목적지로 간다
+  legIndex: 0,        // 경유 여행에서 지금 몇 번째 구간을 날고 있는가
   visitedTarget: false,// 목적지 도착(착륙 또는 근접)을 이미 마쳤는가. 왕복 반환점 판정에 쓴다
   // 18단계
   landingBody: null,   // 지금 착륙 중인 천체 (목적지 또는 지구)
@@ -294,21 +298,27 @@ function setSubtitle(text) {
 // ---- 입력이 바뀔 때: 시간 지연을 다시 계산하고 화면 전체를 맞춘다 ----
 function recompute() {
   if (!state.destination || !state.speed || !state.tripType) return;
+  // 경유 여행이면 구간 거리를 모두 더한 값으로 계산한다 (D-95)
+  const legs = routeLegs();
+  const totalDistance = legs
+    ? legs.reduce((sum, l) => sum + l.distance, 0)
+    : state.destination.distance;
   state.result = computeTimeDilation({
-    distance: state.destination.distance,
+    distance: totalDistance,
     speed: state.speed,
-    tripType: state.tripType,
+    // 구간을 모두 더했으므로 왕복 두 배 계산을 다시 하지 않는다
+    tripType: legs ? TRIP_TYPES.ONE_WAY : state.tripType,
   });
   resultTable.update(state.result, {
-    destinationName: state.destination.name,
+    destinationName: state.waypoint
+      ? `${state.waypoint.name} 경유 ${state.destination.name}`
+      : state.destination.name,
     tripTypeLabel: state.tripType === TRIP_TYPES.ROUND_TRIP ? '왕복' : '편도',
   });
   lifespanChart.setResult(state.result, state.departureAges);
 
-  // 항행 장면의 목적지 천체를 바꾼다
-  if (state.cruise) {
-    state.cruise.setBodies(CELESTIAL_BODIES.earth, getBodyVisual(state.destination.id));
-  }
+  // 항행 장면의 양 끝 천체를 지금 구간에 맞춘다
+  applyLegBodies();
   refreshChapters();
   setProgress(state.progress);
   syncBar();
@@ -334,6 +344,79 @@ function updateSurvival() {
 /** 지금 목적지가 내려앉을 표면이 있는 천체인가 (D-61) */
 function targetVisual() {
   return state.destination ? getBodyVisual(state.destination.id) : null;
+}
+
+// ---- 경유 여행 (21단계, D-95) ----
+// 경유지를 고르면 여정이 여러 구간으로 나뉜다: 지구 → 경유지 → 목적지 → (왕복이면 지구).
+// 각 구간은 그 자체로 하나의 편도 항행처럼 다룬다. 구간 끝에 닿으면 착륙·탐사·이륙을 하고 다음 구간으로 넘어간다.
+const EARTH_STOP = { id: 'earth', name: '지구', distance: 0 };
+
+function routeLegs() {
+  if (!state.waypoint || !state.destination) return null;
+  const stops = [EARTH_STOP, state.waypoint, state.destination];
+  if (state.tripType === TRIP_TYPES.ROUND_TRIP) stops.push(EARTH_STOP);
+  const legs = [];
+  for (let i = 0; i < stops.length - 1; i += 1) {
+    legs.push({
+      from: stops[i], to: stops[i + 1],
+      distance: legDistance(stops[i].distance, stops[i + 1].distance),
+    });
+  }
+  return legs;
+}
+
+function currentLeg() {
+  const legs = routeLegs();
+  if (!legs) return null;
+  return legs[Math.min(state.legIndex, legs.length - 1)];
+}
+
+/** 지금 구간이 향하는 천체 (경유 여행이 아니면 그냥 목적지) */
+function legTargetVisual() {
+  const leg = currentLeg();
+  return leg ? getBodyVisual(leg.to.id) : targetVisual();
+}
+
+/** 지금 구간의 재생 길이(초)와 거리 */
+function legDistanceMeters() {
+  const leg = currentLeg();
+  if (leg) return leg.distance;
+  return state.destination?.distance ?? 0;
+}
+
+/**
+ * 다음 구간이 남아 있으면 그리로 떠난다 (D-95).
+ * @returns {boolean} 넘어갔으면 true
+ */
+function advanceLeg() {
+  const legs = routeLegs();
+  if (!legs || state.legIndex >= legs.length - 1) return false;
+  state.legIndex += 1;
+  const leg = legs[state.legIndex];
+  state.cruise?.show();
+  state.cruise?.start();
+  state.cruise?.setCameraMode(state.view);
+  cruiseHud?.setVisible(true);
+  applyLegBodies();
+  state.phase = 'cruise';
+  state.visitedTarget = false;
+  state.playing = true;
+  setProgress(0);
+  setMood('cruise');
+  setSubtitle(`${leg.from.name}에서 떠나 ${leg.to.name}(으)로 항행 중입니다.`);
+  refreshChapters();
+  syncBar();
+  return true;
+}
+
+/** 항행 화면의 양 끝 천체를 지금 구간에 맞춘다 */
+function applyLegBodies() {
+  if (!state.cruise || !state.destination) return;
+  const leg = currentLeg();
+  state.cruise.setBodies(
+    getBodyVisual(leg ? leg.from.id : 'earth'),
+    getBodyVisual(leg ? leg.to.id : state.destination.id),
+  );
 }
 
 function targetGravity() {
@@ -422,7 +505,8 @@ function enterCruise({ silent = false } = {}) {
     state.progress = 0;
     state.visitedTarget = false;
   }
-  setSubtitle(`${state.destination?.name ?? '목적지'}(으)로 항행 중 — 아래 슬라이더를 끌면 원하는 시점을 볼 수 있습니다.`);
+  applyLegBodies();
+  setSubtitle(`${legTargetVisual()?.name ?? '목적지'}(으)로 항행 중 — 아래 슬라이더를 끌면 원하는 시점을 볼 수 있습니다.`);
   stopwatch.setStatus('시간 흐르는 중…');
   setProgress(state.progress);
   syncBar();
@@ -431,11 +515,15 @@ function enterCruise({ silent = false } = {}) {
 /** 목적지에 닿았을 때: 고체 표면이면 착륙 장면, 아니면 근접 통과 (D-61) */
 function reachTarget() {
   state.visitedTarget = true;
-  const visual = targetVisual();
+  const leg = currentLeg();
+  // 경유 여행의 마지막 구간이 지구로 오는 것이면 재진입한다 (D-95)
+  if (leg && leg.to.id === 'earth') { startReentry(); return; }
+  const visual = legTargetVisual();
   if (!state.landing || !isLandable(visual)) {
     // 근접 통과: 장면은 그대로 두고 알림만 준다
     setSubtitle(`${visual?.name ?? '목적지'} 근접 통과 — 내려앉을 표면이 없어 곁을 스쳐 지나갑니다.`);
     audio.chime();
+    if (advanceLeg()) return;                                   // 경유 여행이면 다음 구간으로 (D-95)
     if (state.tripType === TRIP_TYPES.ROUND_TRIP) { state.playing = true; }
     else { finishCruise(); }
     return;
@@ -677,6 +765,10 @@ function finishLiftoff() {
   state.cruise?.start();
   state.cruise?.setCameraMode(state.view);
   cruiseHud?.setVisible(true);
+
+  // 경유 여행: 아직 남은 구간이 있으면 그리로 떠난다 (D-95)
+  if (advanceLeg()) return;
+
   if (state.tripType !== TRIP_TYPES.ROUND_TRIP) {
     // 편도: 목적지 궤도에 오른 것으로 여행이 끝난다
     state.cruise?.hide();
@@ -734,6 +826,7 @@ function finishCruise() {
 
 function resetMission() {
   arrivalCard.hide();
+  state.legIndex = 0;
   state.landing?.releaseLook();
   state.phase = 'ready';
   state.playing = false;
@@ -788,11 +881,13 @@ function startTicker() {
       const next = state.landingProgress + (dt * landingScale) / seconds;
       if (next >= 1) { updateLanding(1); finishLanding(); } else { updateLanding(next); }
     } else if (state.playing && state.phase === 'cruise' && state.result) {
-      const durationSec = travelDurationSeconds(state.destination?.distance ?? 0,
-        state.tripType === TRIP_TYPES.ROUND_TRIP);
+      const legs = routeLegs();
+      const durationSec = travelDurationSeconds(legDistanceMeters(),
+        !legs && state.tripType === TRIP_TYPES.ROUND_TRIP);
       const next = state.progress + (dt * state.timeScale) / durationSec;
-      const roundTrip = state.tripType === TRIP_TYPES.ROUND_TRIP;
-      const turnAt = roundTrip ? 0.5 : 1;
+      // 경유 여행에서는 구간마다 0 → 1이므로 반환점(0.5) 개념이 없다
+      const roundTrip = !legs && state.tripType === TRIP_TYPES.ROUND_TRIP;
+      const turnAt = legs ? 1 : (roundTrip ? 0.5 : 1);
       if (!state.visitedTarget && next >= turnAt) {
         setProgress(turnAt);
         reachTarget();
@@ -851,8 +946,21 @@ createLaunchSiteSelector(el('launch-site-selector'), (site) => {
   state.launch?.scene.setLaunchSite(site);   // 18단계 (D-69): 발사장 좌표에 맞춰 지구를 돌린다
 });
 
+// 경유지 선택기는 아래에서 만들지만, 목적지 콜백이 먼저 불릴 수 있어 미리 선언해 둔다
+let waypointSelector = null;
+
 createDestinationSelector(el('destination-selector'), (destination) => {
   state.destination = destination;
+  state.legIndex = 0;
+  waypointSelector?.setExcluded(destination.id);   // 목적지와 같은 천체는 경유지로 못 고른다
+  recompute();
+});
+
+// ---- 경유지 선택 (21단계, D-95) ----
+// 지구 → 경유지 → 목적지 → (왕복이면 지구) 순으로 다닌다. 구간 거리는 physics/route.js.
+waypointSelector = createWaypointSelector(el('waypoint-selector'), (waypoint) => {
+  state.waypoint = waypoint;
+  state.legIndex = 0;
   recompute();
 });
 

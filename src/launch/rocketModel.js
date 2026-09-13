@@ -4,6 +4,7 @@
 
 import * as THREE from '../../lib/three/three.module.js';
 import { SCENE_METERS_PER_UNIT } from './launchScene.js';
+import { createSpacecraft } from './spacecraftModel.js';
 
 const S = SCENE_METERS_PER_UNIT;
 
@@ -240,6 +241,31 @@ export function createRocketModel(spec) {
     top = Math.max(top, (part.position[1] + part.size[1] / 2) / S);
   }
 
+  // ---- 페어링 안의 우주선 (21단계, D-94) ----
+  // 항행 화면에 나오는 바로 그 배를 페어링 자리에 넣어 둔다. 페어링을 벗으면 이 배가 드러나므로
+  // "발사 때 본 것"과 "항행 때 보는 것"이 같아진다.
+  const payloadPart = spec.geometry.parts.find((p) => p.partId === 'fairing');
+  let payloadShip = null;
+  let fairingMeshes = [];
+  if (payloadPart) {
+    payloadShip = createSpacecraft();
+    // 우주선 모델은 1 단위 = 1 m로 만들어져 있다. 화면 축척(1 단위 = 10 m)에 맞춰 줄인다
+    payloadShip.scale.setScalar(1 / S);
+    payloadShip.rotation.x = -Math.PI / 2;    // 모델의 +Z(진행 방향)를 로켓의 +Y(위)로
+    payloadShip.position.set(0, payloadPart.position[1] / S, 0);
+    payloadShip.visible = false;
+    root.add(payloadShip);
+    // 페어링 껍데기는 따로 잡아 두었다가 분리 때 감춘다
+    fairingMeshes = stageGroups.get(payloadPart.stageId)?.children
+      .filter((m) => m.userData.partId === payloadPart.partId) ?? [];
+  }
+
+  /** 페어링을 벗기거나(false) 다시 씌운다(true). 벗기면 안의 우주선이 드러난다 */
+  function setFairing(on) {
+    for (const m of fairingMeshes) m.visible = on;
+    if (payloadShip) payloadShip.visible = !on;
+  }
+
   // 단별 화염: 그 단의 가장 아래 부품 바닥에 붙인다
   for (const stage of spec.stages) {
     const parts = spec.geometry.parts.filter((p) => p.stageId === stage.id);
@@ -256,6 +282,8 @@ export function createRocketModel(spec) {
   let flicker = 0;
   function update(sim) {
     flicker += 0.35;
+    // 페어링을 벗은 뒤에는 우주선의 회전 거주 구역이 돈다 (D-94)
+    if (payloadShip?.visible && payloadShip.userData.ring) payloadShip.userData.ring.rotation.z += 0.02;
     const altitude = sim.getAltitude();
     for (const s of sim.stages) {
       const flame = flames.get(s.id);
@@ -311,5 +339,9 @@ export function createRocketModel(spec) {
     }
   }
 
-  return { root, stageGroups, flames, update, detachStage, reassemble, heightUnits: top };
+  return {
+    root, stageGroups, flames, update, detachStage, reassemble, setFairing,
+    get payloadShip() { return payloadShip; },
+    heightUnits: top,
+  };
 }

@@ -115,3 +115,5 @@ KSP처럼 3인칭 시점에서 로켓 발사, 단 분리, 재착륙을 보여주
 `multiply` / `overlay` / `source-in` 합성으로 층을 쌓는다. 200만 번 반복보다 훨씬 빠르다.
 - `cruiseScene.js`: 항행 화면의 지구 구에도 실사 텍스처를 입힌다(`visual.surface === 'earth'`). NASA 사진을 찾으면 재질의 map을 바꿔 끼운다 (D-88).
 - `launchHud.js`: 상승 속도(속도의 수직 성분)를 함께 표시한다 (D-92).
+- `spacecraftModel.js`: 회전 거주 구역(원심 중력 고리)·트러스 척추·태양전지판 3장씩으로 확장. `userData.ring`을 매 프레임 돌린다 (D-94).
+- `rocketModel.js`: 페어링 안에 같은 우주선을 넣어 두고 `setFairing(false)`로 드러낸다 (D-94).

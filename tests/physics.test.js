@@ -6,6 +6,7 @@ import { SPEED_OF_LIGHT, LIGHT_YEAR, SECONDS_PER_YEAR } from '../src/data/consta
 import { gamma, gammaMinusOne } from '../src/physics/lorentz.js';
 import { computeTimeDilation, TRIP_TYPES } from '../src/physics/timeDilation.js';
 import { circularOrbitSpeed, createLaunchSimulation } from '../src/physics/launchDynamics.js';
+import { buildRoute, legDistance } from '../src/physics/route.js';
 import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
 import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.js';
 import { journeyAt, angularRadius, dopplerFactor, aberratedAngle, beta } from '../src/physics/journey.js';
@@ -299,6 +300,22 @@ cases.push(['탐사 점수: 4/5 = 80점', 80, explorationScore(almost).score, 1e
 cases.push(['탐사: 4/5는 아직 미완 (1 = 그렇다)', 1, explorationScore(almost).complete ? 0 : 1, 1e-9]);
 cases.push(['탐사 안내: 가장 가까운 임무를 찾는다 (1 = 그렇다)', 1,
   nearestTask({ x: 20, z: -12 }, {})?.task.id === 'flag' ? 1 : 0, 1e-9]);
+
+// ---- 21단계: 경유 여행 경로 (D-95) ----
+// 두 천체 사이는 "가장 가까울 때의 거리" |d₁ − d₂| 로 잡는다 (route.js 주석 참고)
+cases.push(['구간 거리: 화성(2.25e11) → 목성(7.78e11)', 5.53e11, legDistance(2.25e11, 7.78e11), 1e-9]);
+cases.push(['구간 거리: 지구 → 달', 3.844e8, legDistance(0, 3.844e8), 1e-9]);
+const soloRoute = buildRoute({ destinationDistance: 3.844e8, destinationName: '달', roundTrip: false });
+cases.push(['경유 없는 편도는 구간 1개', 1, soloRoute.legs.length, 1e-9]);
+const viaRoute = buildRoute({
+  destinationDistance: 2.25e11, destinationName: '화성',
+  waypointDistance: 3.844e8, waypointName: '달', roundTrip: true,
+});
+cases.push(['달 경유 화성 왕복은 구간 3개', 3, viaRoute.legs.length, 1e-9]);
+cases.push(['달 경유 화성 왕복 총 거리 (m)',
+  3.844e8 + (2.25e11 - 3.844e8) + 2.25e11, viaRoute.totalDistance, 1e-9]);
+cases.push(['경유 여행의 마지막 구간은 지구로 돌아온다 (1 = 그렇다)', 1,
+  viaRoute.legs[2].to === '지구' ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');
