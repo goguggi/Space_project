@@ -25,6 +25,8 @@ import { createSurvivalIcons } from './ui/survivalIcons.js';
 import { createMissionBar } from './ui/missionBar.js';
 import { createViewControls } from './ui/viewControls.js';
 import { createArrivalCard } from './ui/arrivalCard.js';
+import { createPlainSummary } from './ui/plainSummary.js';
+import { createEverydayDilation } from './ui/everydayDilation.js';
 import { createWaypointSelector } from './ui/waypointSelector.js';
 import { legDistance } from './physics/route.js';
 import { createLaunchSiteMap } from './ui/launchSiteMap.js';
@@ -99,6 +101,11 @@ const el = (id) => document.getElementById(id);
 
 // ---- 결과를 그리는 구성 요소 (입력 구성 요소보다 먼저 만든다) ----
 const resultTable = createResultTable(el('result-table-container'));
+
+// ---- 한 문장 요약과 일상 속도 비교 (21단계, D-97) ----
+// 이 프로젝트의 목적은 광속 불변에서 나오는 시간 지연을 "얼마나 덜 늙는가"로 느끼게 하는 것이다.
+const plainSummary = createPlainSummary(el('plain-summary-container'));
+const everydayDilation = createEverydayDilation(el('everyday-container'));
 const stopwatch = createStopwatch(el('stopwatch-container'));
 const lifespanChart = createLifespanChart(el('lifespan-chart-container'));
 const survivalIcons = createSurvivalIcons(el('survival-container'));
@@ -318,6 +325,15 @@ function recompute() {
     tripTypeLabel: state.tripType === TRIP_TYPES.ROUND_TRIP ? '왕복' : '편도',
   });
   lifespanChart.setResult(state.result, state.departureAges);
+  plainSummary.update({
+    result: state.result,
+    destinationName: state.waypoint
+      ? `${state.waypoint.name} 경유 ${state.destination.name}`
+      : state.destination.name,
+    roundTrip: state.tripType === TRIP_TYPES.ROUND_TRIP,
+    speed: state.speed,
+  });
+  everydayDilation.update(state.speed);
 
   // 항행 장면의 양 끝 천체를 지금 구간에 맞춘다
   applyLegBodies();
@@ -330,10 +346,7 @@ function recompute() {
 function renderLifespan() {
   if (!state.result) return;
   lifespanChart.setResult(state.result, state.departureAges);
-  // 막대 그래프도 여정 전체 기준으로 (경유 여행이면 구간 진행률을 전체 진행률로 바꾼다)
-  lifespanChart.setProgress(share
-    ? share.beforeFraction + share.curFraction * state.progress
-    : state.progress);
+  lifespanChart.setProgress(globalProgress());
   updateSurvival();
 }
 
@@ -445,6 +458,12 @@ function legShareInfo() {
   return { total, beforeFraction: before / total, curFraction: cur / total };
 }
 
+/** 여정 전체에서의 진행률 (경유 여행이면 앞 구간까지 포함해 0~1) */
+function globalProgress() {
+  const share = legShareInfo();
+  return share ? share.beforeFraction + share.curFraction * state.progress : state.progress;
+}
+
 /**
  * 지금 시점의 여정 상태.
  * 경유 여행에서는 **지금 구간**만 놓고 계산한다. 전체 거리로 계산하면 3D 장면이
@@ -488,10 +507,7 @@ function setProgress(p) {
   stopwatch.setTimes(j.earthElapsed + doneEarth, j.shipElapsed + doneShip);
   // 음악도 시간 지연을 따라 늘어진다 (21단계): γ가 클수록 초침과 음형이 느려진다
   audio.setTimeDilation(gamma(state.speed ?? 0));
-  // 막대 그래프도 여정 전체 기준으로 (경유 여행이면 구간 진행률을 전체 진행률로 바꾼다)
-  lifespanChart.setProgress(share
-    ? share.beforeFraction + share.curFraction * state.progress
-    : state.progress);
+  lifespanChart.setProgress(globalProgress());
   updateSurvival();
 
   if (state.cruise) {

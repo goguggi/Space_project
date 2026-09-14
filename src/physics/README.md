@@ -73,3 +73,4 @@
   고도 120 km 위에서 그 속도에 닿으면 2단 엔진을 꺼 궤도 진입으로 끝낸다(SECO). 연료를 끝까지 태우지 않는다.
 - `getVerticalSpeed()` / `getHorizontalSpeed()`: 속도의 수직·수평 성분. 고도는 정확히 수직 성분만큼 오른다.
 - `route.js` (새 파일, D-95): 경유 여행을 구간으로 나눈다. `legDistance(d1, d2)` = |d₁ − d₂| (가장 가까울 때의 거리), `buildRoute(...)`.
+- `ageGap.js` (새 파일, D-97): 시간 지연을 "얼마나 덜 늙는가"로 바꾼다. `ageGap(result, organisms)`, `bestEquivalent(...)`.

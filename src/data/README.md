@@ -56,3 +56,4 @@
 |---|---|
 | `earthOutline.js` | 지구 대륙·사막의 아주 거친 윤곽 좌표 `[경도, 위도]`. 지구 표면 텍스처를 캔버스로 그릴 때 쓴다 (D-69) |
 | `celestialBodies.js` | 지구에 `landable`·`surfaceGravity: 9.81`·`reentry`·`landingStartAltitudeM: 80,000` 추가 (D-66) |
+| `everydaySpeeds.js` | 일상·우주에서 실제로 나오는 속도 9가지(걷기~파커 탐사선)와 음속. 시간 지연을 견주어 보는 표에 쓴다 (D-97) |

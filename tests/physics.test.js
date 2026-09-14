@@ -7,6 +7,8 @@ import { gamma, gammaMinusOne } from '../src/physics/lorentz.js';
 import { computeTimeDilation, TRIP_TYPES } from '../src/physics/timeDilation.js';
 import { circularOrbitSpeed, createLaunchSimulation } from '../src/physics/launchDynamics.js';
 import { buildRoute, legDistance } from '../src/physics/route.js';
+import { ageGap, bestEquivalent } from '../src/physics/ageGap.js';
+import { ORGANISMS as AGE_ORGANISMS } from '../src/data/organisms.js';
 import { FALCON_HEAVY } from '../src/data/falconHeavy.js';
 import { selectLandingTarget, bodyAltitude } from '../src/launch/landingTarget.js';
 import { journeyAt, angularRadius, dopplerFactor, aberratedAngle, beta } from '../src/physics/journey.js';
@@ -316,6 +318,18 @@ cases.push(['달 경유 화성 왕복 총 거리 (m)',
   3.844e8 + (2.25e11 - 3.844e8) + 2.25e11, viaRoute.totalDistance, 1e-9]);
 cases.push(['경유 여행의 마지막 구간은 지구로 돌아온다 (1 = 그렇다)', 1,
   viaRoute.legs[2].to === '지구' ? 1 : 0, 1e-9]);
+
+// ---- 21단계: 덜 늙은 시간 (D-97) ----
+const gapInfo = ageGap({ earthTime: 100, shipTime: 60 }, AGE_ORGANISMS);
+cases.push(['덜 늙은 시간 = 지구 시간 − 우주선 시간', 40, gapInfo.gap, 1e-9]);
+cases.push(['덜 늙은 비율 = 40 / 100', 0.4, gapInfo.ratio, 1e-9]);
+cases.push(['1년에 벌어지는 차이 = 비율 × 1년 (초)', 0.4 * 31_557_600, gapInfo.perYear, 1e-9]);
+// 0.99c 프록시마 편도: 지구 4.29년, 우주선 0.605년 → 약 3.68년 차이
+const proximaGap = ageGap(proxima, AGE_ORGANISMS);
+cases.push(['0.99c 프록시마 편도에서 덜 늙은 시간 (년)', 3.684,
+  proximaGap.gap / SECONDS_PER_YEAR, 2e-3]);
+cases.push(['덜 늙은 시간이 0이면 견줄 생물이 없다 (1 = 그렇다)', 1,
+  bestEquivalent(ageGap({ earthTime: 10, shipTime: 10 }, AGE_ORGANISMS)) === null ? 1 : 0, 1e-9]);
 
 // 표 출력
 const tbody = document.getElementById('results');
