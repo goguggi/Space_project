@@ -1,42 +1,23 @@
 @echo off
-chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
 
 echo ==========================================
-echo   Space_project - GitHub ì˜¬ë¦¬ê¸°
+echo   Space_project - GitHub ¿Ã¸®±â
 echo ==========================================
 echo.
 
 where git >nul 2>nul
-if errorlevel 1 (
-  echo [ì˜¤ë¥˜] gitì´ ì„¤ì¹˜ë¼ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.
-  echo        https://git-scm.com/download/win ì—ì„œ ì„¤ì¹˜í•œ ë’¤ ë‹¤ì‹œ ì‹¤í–‰í•˜ì„¸ìš”.
-  echo.
-  pause
-  exit /b 1
-)
+if errorlevel 1 goto no_git
 
-rem ì´ë ¥(.git)ì´ ìˆëŠ” ì‚¬ë³¸ì„ ì°¾ëŠ”ë‹¤. ì—†ìœ¼ë©´ zipì—ì„œ í‘¼ë‹¤.
 if exist "Space_project\.git" goto have_repo
 if exist ".git" goto here_repo
+if not exist "Space_project.zip" goto no_zip
 
-if not exist "Space_project.zip" (
-  echo [ì˜¤ë¥˜] Space_project.zip ë„, ì´ë ¥ì´ ìˆëŠ” Space_project í´ë”ë„ ì—†ìŠµë‹ˆë‹¤.
-  echo        ì´ íŒŒì¼ì„ zipê³¼ ê°™ì€ í´ë”ì— ë‘ê³  ì‹¤í–‰í•˜ì„¸ìš”.
-  echo.
-  pause
-  exit /b 1
-)
-
-echo zipì—ì„œ ì´ë ¥ì´ ë“¤ì–´ ìˆëŠ” ì‚¬ë³¸ì„ í‘¸ëŠ” ì¤‘ì…ë‹ˆë‹¤...
+echo zip ¿¡¼­ ÀÌ·ÂÀÌ µé¾î ÀÖ´Â »çº»À» Çª´Â ÁßÀÔ´Ï´Ù. Àá½Ã¸¸ ±â´Ù¸®¼¼¿ä.
 if exist "_push_repo" rmdir /s /q "_push_repo"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath 'Space_project.zip' -DestinationPath '_push_repo' -Force"
-if errorlevel 1 (
-  echo [ì˜¤ë¥˜] zipì„ í‘¸ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.
-  pause
-  exit /b 1
-)
+powershell -NoProfile -Command "Expand-Archive -LiteralPath 'Space_project.zip' -DestinationPath '_push_repo' -Force"
+if errorlevel 1 goto unzip_fail
 set REPO=_push_repo\Space_project
 goto do_push
 
@@ -50,29 +31,52 @@ set REPO=.
 :do_push
 cd /d "%~dp0%REPO%"
 echo.
-echo ì €ì¥ì†Œ ìœ„ì¹˜: %CD%
-echo ë§ˆì§€ë§‰ ì»¤ë°‹:
-git log --oneline -1
+echo ÀúÀå¼Ò À§Ä¡: %CD%
 echo.
-echo ì˜¬ë¦´ ì»¤ë°‹ ëª©ë¡:
-git log origin/main..HEAD --oneline
+echo ¿Ã¸± Ä¿¹Ô:
+git log origin/main..HEAD --oneline 2>nul
 echo.
 echo ------------------------------------------
-echo GitHubë¡œ ì˜¬ë¦½ë‹ˆë‹¤.
-echo ë¡œê·¸ì¸ ì°½ì´ ëœ¨ë©´ GitHub ê³„ì •ìœ¼ë¡œ ë¡œê·¸ì¸ë§Œ í•´ ì£¼ì„¸ìš”.
+echo  GitHub ·Î ¿Ã¸³´Ï´Ù.
+echo  ·Î±×ÀÎ Ã¢ÀÌ ¶ß¸é GitHub °èÁ¤À¸·Î ·Î±×ÀÎ¸¸ ÇØ ÁÖ¼¼¿ä.
 echo ------------------------------------------
 echo.
 git push origin main
-if errorlevel 1 (
-  echo.
-  echo [ì‹¤íŒ¨] ìœ„ ë©”ì‹œì§€ë¥¼ í™•ì¸í•˜ì„¸ìš”.
-  echo        ë¹„ë°€ë²ˆí˜¸ë¥¼ ë¬¼ìœ¼ë©´ GitHub ë¹„ë°€ë²ˆí˜¸ê°€ ì•„ë‹ˆë¼ ê°œì¸ ì•¡ì„¸ìŠ¤ í† í°ì´ í•„ìš”í•©ë‹ˆë‹¤.
-  echo        github.com - Settings - Developer settings - Personal access tokens ì—ì„œ ë§Œë“¤ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
-) else (
-  echo.
-  echo [ì„±ê³µ] ëª¨ë‘ ì˜¬ë¼ê°”ìŠµë‹ˆë‹¤.
-  echo        ì €ì¥ì†Œ: https://github.com/goguggi/Space_project
-  echo        ê²Œì‹œ ì‚¬ì´íŠ¸ëŠ” 1~2ë¶„ ë’¤ ê°±ì‹ ë©ë‹ˆë‹¤: https://goguggi.github.io/Space_project/
-)
+if errorlevel 1 goto push_fail
+
+echo.
+echo [¼º°ø] ¸ğµÎ ¿Ã¶ó°¬½À´Ï´Ù.
+echo  ÀúÀå¼Ò: https://github.com/goguggi/Space_project
+echo  °Ô½Ã »çÀÌÆ®´Â 1~2ºĞ µÚ °»½ÅµË´Ï´Ù.
 echo.
 pause
+exit /b 0
+
+:no_git
+echo [¿À·ù] git ÀÌ ¼³Ä¡µÅ ÀÖÁö ¾Ê½À´Ï´Ù.
+echo  https://git-scm.com/download/win ¿¡¼­ ¼³Ä¡ÇÑ µÚ ´Ù½Ã ½ÇÇàÇÏ¼¼¿ä.
+echo.
+pause
+exit /b 1
+
+:no_zip
+echo [¿À·ù] Space_project.zip µµ, ÀÌ·ÂÀÌ ÀÖ´Â Space_project Æú´õµµ ¾ø½À´Ï´Ù.
+echo  ÀÌ ÆÄÀÏÀ» zip °ú °°Àº Æú´õ¿¡ µÎ°í ½ÇÇàÇÏ¼¼¿ä.
+echo.
+pause
+exit /b 1
+
+:unzip_fail
+echo [¿À·ù] zip À» Çª´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.
+echo.
+pause
+exit /b 1
+
+:push_fail
+echo.
+echo [½ÇÆĞ] À§ ¸Ş½ÃÁö¸¦ È®ÀÎÇÏ¼¼¿ä.
+echo  ºñ¹Ğ¹øÈ£¸¦ ¹°À¸¸é GitHub ºñ¹Ğ¹øÈ£°¡ ¾Æ´Ï¶ó °³ÀÎ ¾×¼¼½º ÅäÅ«ÀÌ ÇÊ¿äÇÕ´Ï´Ù.
+echo  github.com - Settings - Developer settings - Personal access tokens
+echo.
+pause
+exit /b 1
