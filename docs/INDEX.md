@@ -23,6 +23,7 @@
 | [08_rocket_design_handoff.md](08_rocket_design_handoff.md) | 로켓 설계 프로그램 담당자용 인수 문서. JSON 형식, 검증 규칙, 개발 단계 |
 | [10_feature4_spec.md](10_feature4_spec.md) | 기능 4(18단계) 세부 스펙과 미결 질문 Q-29~Q-33 |
 | [09_current_status.md](09_current_status.md) | **현재 상황 인수인계.** 완료·진행 중·남은 일, 다른 컴퓨터에서 시작하는 방법. 이어서 할 때 이 문서부터 |
+| [11_report_draft.md](11_report_draft.md) | 창의적산출물발표회 보고서 초안. 보고서 양식(Ⅰ~Ⅶ)에 맞춰 docs 전체를 한 편으로 재구성. NotebookLM 입력용 |
 | [examples/falcon_heavy.rocket.json](examples/falcon_heavy.rocket.json) | 로켓 제원 JSON 기준 예제 (md 아님, 계약 파일) |
 
 ## 폴더별 코드 설명 (src/, tests/)
